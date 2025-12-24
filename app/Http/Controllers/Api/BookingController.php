@@ -18,7 +18,7 @@ class BookingController extends Controller
      */
     public function getUserBookings(Request $request): JsonResponse
     {
-        $query = Booking::with(['hotel', 'hotel.province', 'room'])
+        $query = Booking::with(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media'])
             ->where('user_id', Auth::id());
 
         // Filter by status
@@ -34,20 +34,34 @@ class BookingController extends Controller
         $bookings = $query->orderByDesc('created_at')
             ->get()
             ->map(function ($booking) {
+                $hotelImages = $booking->hotel && $booking->hotel->media ? 
+                    $booking->hotel->media->where('type', 'image')->take(1)->map(function ($media) {
+                        return $media->file_url;
+                    })->values() : [];
+
+                $roomImages = $booking->room && $booking->room->media ? 
+                    $booking->room->media->where('type', 'image')->take(1)->map(function ($media) {
+                        return $media->file_url;
+                    })->values() : [];
+
                 return [
                     'id' => $booking->id,
                     'booking_reference' => $booking->booking_reference,
                     'hotel' => $booking->hotel ? [
                         'id' => $booking->hotel->id,
                         'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
+                        'images' => $hotelImages,
                         'province' => $booking->hotel->province ? [
                             'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                         ] : null,
                     ] : null,
                     'room' => $booking->room ? [
                         'id' => $booking->room->id,
+                        'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
+                        'type' => $booking->room->type ?? 'standard',
                         'price_per_night' => (float) $booking->room->price_per_night,
                         'beds_count' => $booking->room->beds_count,
+                        'images' => $roomImages,
                     ] : null,
                     'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                     'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
@@ -115,7 +129,11 @@ class BookingController extends Controller
                 ] : null,
                 'room' => $booking->room ? [
                     'id' => $booking->room->id,
+                    'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
+                    'type' => $booking->room->type ?? 'standard',
                     'price_per_night' => (float) $booking->room->price_per_night,
+                    'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
+                    'service_fee' => (float) ($booking->room->service_fee ?? 0),
                     'beds_count' => $booking->room->beds_count,
                     'bathrooms_count' => $booking->room->bathrooms_count,
                     'rooms_count' => $booking->room->rooms_count,

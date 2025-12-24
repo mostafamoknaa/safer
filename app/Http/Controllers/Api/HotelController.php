@@ -8,8 +8,10 @@ use App\Models\HotelRoom;
 use App\Models\Province;
 use App\Models\Booking;
 use App\Models\Favorite;
+use App\Models\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
 
 class HotelController extends Controller
 {
@@ -49,7 +51,8 @@ class HotelController extends Controller
                 'province',
                 'rooms' => function ($q) {
                     $q->where('is_active', true);
-                }
+                },
+                'reviews.user'
             ])
             ->where('is_active', true);
 
@@ -78,6 +81,13 @@ class HotelController extends Controller
                 $minPrice = $hotel->rooms->min('price_per_night');
                 $maxPrice = $hotel->rooms->max('price_per_night');
 
+                $images = $hotel->media->where('type', 'image')->map(function ($media) {
+                    return [
+                        'url' => $media->file_url,
+                        'order' => $media->order_column,
+                    ];
+                })->sortBy('order')->values();
+
                 return [
                     // 🔹 all hotel columns
                     ...$hotel->toArray(),
@@ -92,6 +102,9 @@ class HotelController extends Controller
 
                     // 🔹 extra computed data
                     'rooms_count' => $hotel->rooms->count(),
+                    'images' => $images,
+                    'average_rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
+                    'reviews_count' => $hotel->reviews_count,
                     'price' => ($minPrice !== null && $maxPrice !== null)
                         ? [
                             'min' => (float) $minPrice,
@@ -132,6 +145,54 @@ class HotelController extends Controller
     }
 
     /**
+     * Add review to a hotel.
+     */
+    public function addReview(Request $request, Hotel $hotel): JsonResponse
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:1000',
+        ]);
+
+        $user = auth('sanctum')->user();
+
+        // Check if user already reviewed this hotel
+        $existingReview = Review::where('user_id', $user->id)
+            ->where('hotel_id', $hotel->id)
+            ->first();
+
+        if ($existingReview) {
+            $existingReview->update([
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+            $review = $existingReview;
+        } else {
+            $review = Review::create([
+                'user_id' => $user->id,
+                'hotel_id' => $hotel->id,
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Review added successfully',
+            'data' => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'user' => [
+                    'name' => $user->name,
+                    'photo' => $user->image ?? null,
+                ],
+                'created_at' => $review->created_at->format('Y-m-d'),
+            ],
+        ]);
+    }
+
+    /**
      * Get hotel details with rooms and media.
      */
     public function getHotelDetails(Hotel $hotel): JsonResponse
@@ -143,8 +204,8 @@ class HotelController extends Controller
             ], 404);
         }
 
-        $hotel->load(['province', 'media', 'managers', 'rooms' => function ($query) {
-            $query->where('is_active', true);
+        $hotel->load(['province', 'media', 'managers', 'reviews.user', 'rooms' => function ($query) {
+            $query->where('is_active', true)->with('media');
         }]);
 
         $user = auth('sanctum')->user();
@@ -173,12 +234,25 @@ class HotelController extends Controller
                  return $media->file_url;
             })->values();
 
+            // Check availability (simplified - you may want more complex logic)
+            $isAvailable = !$room->bookings()
+                ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                ->where('check_in_date', '<=', now()->addDays(30))
+                ->where('check_out_date', '>=', now())
+                ->exists();
+
             return [
                 'id' => $room->id,
+                'name' => $room->name ?? 'Room ' . $room->id,
+                'type' => $room->type ?? 'standard',
                 'price_per_night' => (float) $room->price_per_night,
+                'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
+                'service_fee' => (float) ($room->service_fee ?? 0),
                 'beds_count' => $room->beds_count,
                 'bathrooms_count' => $room->bathrooms_count,
                 'rooms_count' => $room->rooms_count,
+                'is_available' => $isAvailable,
+                'rating' => 4.5, // Placeholder - implement room-specific ratings if needed
                 'images' => $images,
             ];
         });
@@ -205,6 +279,19 @@ class HotelController extends Controller
             ];
         });
 
+        $reviews = $hotel->reviews->take(10)->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'user' => [
+                    'name' => $review->user->name,
+                    'photo' => $review->user->image ?? null,
+                ],
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'created_at' => $review->created_at->format('Y-m-d'),
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -214,7 +301,8 @@ class HotelController extends Controller
                 'lat' => $hotel->lat ? (float) $hotel->lat : null,
                 'lang' => $hotel->lang ? (float) $hotel->lang : null,
                 'type' => $hotel->type,
-                'rating' => $hotel->rate ? (float) $hotel->rate : null,
+                'rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
+                'reviews_count' => $hotel->reviews_count,
                 'services' => $hotel->services ?? [],
                 'is_favorite' => $isFavorite,
                 'province' => $hotel->province ? [
@@ -233,6 +321,7 @@ class HotelController extends Controller
                 'images' => $images,
                 'videos' => $videos,
                 'rooms' => $rooms,
+                'reviews' => $reviews,
             ],
         ]);
     }

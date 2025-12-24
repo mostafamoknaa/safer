@@ -21,13 +21,20 @@ class ServiceController extends Controller
     public function getBuses(): JsonResponse
     {
         $buses = Bus::where('is_active', true)
-            ->select('id', 'name_ar', 'name_en', 'total_seats')
+            ->select('id', 'name_ar', 'name_en', 'total_seats', 'type')
             ->get()
             ->map(function ($bus) {
+                // Determine bus size and numbering system
+                $busSize = $bus->total_seats > 30 ? 'large' : 'small';
+                $numberingSystem = $busSize === 'large' ? 'alphanumeric' : 'numeric';
+                
                 return [
                     'id' => $bus->id,
                     'name' => app()->getLocale() === 'ar' ? $bus->name_ar : $bus->name_en,
                     'total_seats' => $bus->total_seats,
+                    'size' => $busSize,
+                    'numbering_system' => $numberingSystem,
+                    'type' => $bus->type ?? 'standard',
                 ];
             });
 
@@ -130,12 +137,15 @@ class ServiceController extends Controller
                 return [
                     'id' => $car->id,
                     'name' => app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en,
-                    'price' => (float) $car->price,
+                    'hourly_rate' => (float) $car->price,
+                    'price_per_hour' => (float) $car->price,
                     'seats_count' => $car->seats_count,
                     'image' => $car->image_url,
                     'max_speed' => $car->max_speed,
                     'acceleration' => $car->acceleration ? (float) $car->acceleration : null,
                     'power' => $car->power,
+                    'fuel_type' => $car->fuel_type ?? 'gasoline',
+                    'transmission' => $car->transmission ?? 'automatic',
                     'notes' => app()->getLocale() === 'ar' ? $car->notes_ar : $car->notes_en,
                 ];
             });
