@@ -24,6 +24,10 @@ class EventController extends Controller
             $query->whereDate('event_date', $request->date);
         }
 
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
         $events = $query->orderBy('event_date')
             ->get()
             ->map(function ($event) {
@@ -32,11 +36,69 @@ class EventController extends Controller
                     'name' => app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en,
                     'location' => app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en,
                     'location_url' => $event->location_url,
-                    'event_date' => $event->event_date->format('Y-m-d H:i:s'),
+                    'lat' => $event->lat ? (float) $event->lat : null,
+                    'lng' => $event->lng ? (float) $event->lng : null,
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'event_time' => $event->event_date->format('H:i'),
                     'description' => app()->getLocale() === 'ar' ? $event->description_ar : $event->description_en,
-                    'price' => (float) $event->price,
+                    'price_from' => (float) $event->price,
+                    'image' => $event->image_url ?? null,
+                    'category' => $event->category ?? 'general',
                     'available_tickets' => $event->available_tickets,
                     'remaining_tickets' => $event->remaining_tickets,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $events,
+        ]);
+    }
+
+    /**
+     * Get nearby events based on location.
+     */
+    public function getNearbyEvents(Request $request): JsonResponse
+    {
+        $request->validate([
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+            'radius' => 'nullable|numeric|min:1|max:50',
+        ]);
+
+        $lat = $request->lat;
+        $lng = $request->lng;
+        $radius = $request->radius ?? 20;
+
+        $events = Event::select('events.*')
+            ->selectRaw(
+                '( 6371 * acos( cos( radians(?) ) *
+                  cos( radians( lat ) ) *
+                  cos( radians( lng ) - radians(?) ) +
+                  sin( radians(?) ) *
+                  sin( radians( lat ) ) ) ) AS distance',
+                [$lat, $lng, $lat]
+            )
+            ->having('distance', '<=', $radius)
+            ->where('is_active', true)
+            ->whereDate('event_date', '>=', now())
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderBy('distance')
+            ->get()
+            ->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'name' => app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en,
+                    'location' => app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en,
+                    'lat' => $event->lat ? (float) $event->lat : null,
+                    'lng' => $event->lng ? (float) $event->lng : null,
+                    'distance' => round($event->distance, 2) . ' km',
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'event_time' => $event->event_date->format('H:i'),
+                    'price_from' => (float) $event->price,
+                    'image' => $event->image_url ?? null,
+                    'category' => $event->category ?? 'general',
                 ];
             });
 
@@ -58,12 +120,19 @@ class EventController extends Controller
                 'name' => app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en,
                 'location' => app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en,
                 'location_url' => $event->location_url,
-                'event_date' => $event->event_date->format('Y-m-d H:i:s'),
+                'lat' => $event->lat ? (float) $event->lat : null,
+                'lng' => $event->lng ? (float) $event->lng : null,
+                'event_date' => $event->event_date->format('Y-m-d'),
+                'event_time' => $event->event_date->format('H:i'),
                 'description' => app()->getLocale() === 'ar' ? $event->description_ar : $event->description_en,
                 'price' => (float) $event->price,
+                'image' => $event->image_url ?? null,
+                'category' => $event->category ?? 'general',
                 'available_tickets' => $event->available_tickets,
                 'remaining_tickets' => $event->remaining_tickets,
                 'sold_tickets' => $event->sold_tickets_count,
+                'organizer' => $event->organizer ?? null,
+                'contact_info' => $event->contact_info ?? null,
             ],
         ]);
     }

@@ -75,4 +75,28 @@ class Hotel extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    /**
+     * Get reviews for this hotel.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Get average rating from reviews.
+     */
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->avg('rating');
+    }
+
+    /**
+     * Get total reviews count.
+     */
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
 }
