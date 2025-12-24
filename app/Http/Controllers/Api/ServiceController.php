@@ -340,4 +340,20 @@ class ServiceController extends Controller
             'data' => $requests,
         ]);
     }
+
+    /**
+     * Create unified reservation for bus or private car.
+     */
+    public function createReservation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'service_type' => 'required|in:bus,private_car',
+        ]);
+
+        if ($request->service_type === 'bus') {
+            return $this->createBusRequest($request);
+        } else {
+            return $this->createPrivateCarRequest($request);
+        }
+    }
 }

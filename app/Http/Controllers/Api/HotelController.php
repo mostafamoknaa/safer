@@ -185,6 +185,7 @@ class HotelController extends Controller
                 'comment' => $review->comment,
                 'user' => [
                     'name' => $user->name,
+                    //return full path to user image or null
                     'photo' => $user->image ?? null,
                 ],
                 'created_at' => $review->created_at->format('Y-m-d'),
@@ -583,9 +584,14 @@ class HotelController extends Controller
             $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
         }
 
-        $hotels = Hotel::with(['province', 'rooms' => function ($q) {
-                $q->where('is_active', true);
-            }])
+        $hotels = Hotel::with([
+                'media',
+                'province',
+                'rooms' => function ($q) {
+                    $q->where('is_active', true);
+                },
+                'reviews.user'
+            ])
             ->select('hotels.*')
             ->selectRaw(
                 '( 6371 * acos( cos( radians(?) ) *
@@ -609,28 +615,31 @@ class HotelController extends Controller
                 $minPrice = $hotel->rooms->min('price_per_night');
                 $maxPrice = $hotel->rooms->max('price_per_night');
 
+                $images = $hotel->media->where('type', 'image')->map(function ($media) {
+                    return [
+                        'url' => $media->file_url,
+                        'order' => $media->order_column,
+                    ];
+                })->sortBy('order')->values();
+
                 return [
-                    'id' => $hotel->id,
+                    // 🔹 all hotel columns
+                    ...$hotel->toArray(),
+
+                    // 🔹 localized fields
                     'is_favorite' => in_array($hotel->id, $favoriteIds),
                     'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
                     'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
-                    'lat' => $hotel->lat ? (float) $hotel->lat : null,
-                    'lang' => $hotel->lang ? (float) $hotel->lang : null,
-                    'distance' => round($hotel->distance, 2) . ' km',
-                    'type' => $hotel->type,
-                    'rating' => $hotel->rate ? (float) $hotel->rate : null,
-                    'services' => $hotel->services ?? [],
-                    'province' => $hotel->province ? [
-                        'id' => $hotel->province->id,
-                        'name' => app()->getLocale() === 'ar'
-                            ? $hotel->province->name_ar
-                            : $hotel->province->name_en,
-                    ] : null,
-                    'website_url' => $hotel->website_url,
                     'about_info' => app()->getLocale() === 'ar'
                         ? $hotel->about_info_ar
                         : $hotel->about_info_en,
+
+                    // 🔹 extra computed data
+                    'distance' => round($hotel->distance, 2) . ' km',
                     'rooms_count' => $hotel->rooms->count(),
+                    'images' => $images,
+                    'average_rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
+                    'reviews_count' => $hotel->reviews_count,
                     'price' => ($minPrice !== null && $maxPrice !== null)
                         ? [
                             'min' => (float) $minPrice,

@@ -44,14 +44,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/private-cars', [\App\Http\Controllers\Api\ServiceController::class, 'getPrivateCars']);
     Route::post('/services/bus-request', [\App\Http\Controllers\Api\ServiceController::class, 'createBusRequest']);
     Route::post('/services/private-car-request', [\App\Http\Controllers\Api\ServiceController::class, 'createPrivateCarRequest']);
+    Route::post('/services/reservation', [\App\Http\Controllers\Api\ServiceController::class, 'createReservation']);
     Route::get('/services/my-requests', [\App\Http\Controllers\Api\ServiceController::class, 'getUserRequests']);
 
     // Events routes
     Route::get('/events', [\App\Http\Controllers\Api\EventController::class, 'getEvents']);
     Route::get('/events/nearby', [\App\Http\Controllers\Api\EventController::class, 'getNearbyEvents']);
+    Route::get('/events/my-tickets', [\App\Http\Controllers\Api\EventController::class, 'getUserTickets']);
     Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class, 'getEventDetails']);
     Route::post('/events/purchase', [\App\Http\Controllers\Api\EventController::class, 'purchaseTickets']);
-    Route::get('/events/my-tickets', [\App\Http\Controllers\Api\EventController::class, 'getUserTickets']);
 
     // Hotels routes
     Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
@@ -82,6 +83,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support/faq', [\App\Http\Controllers\Api\SupportController::class, 'getFAQ']);
     Route::post('/support/insert-contacts', [\App\Http\Controllers\Api\SupportController::class, 'insertContactLinks']);
     Route::post('/support/insert-faqs', [\App\Http\Controllers\Api\SupportController::class, 'insertFAQs']);
+
+    // Wallet routes
+    Route::get('/wallet', [\App\Http\Controllers\Api\WalletController::class, 'getWallet']);
+    Route::get('/wallet/transactions', [\App\Http\Controllers\Api\WalletController::class, 'getTransactions']);
+    Route::post('/wallet/add-money', [\App\Http\Controllers\Api\WalletController::class, 'addMoney']);
+
+    // Voucher routes
+    Route::get('/vouchers', [\App\Http\Controllers\Api\VoucherController::class, 'getVouchers']);
+    Route::get('/vouchers/my-vouchers', [\App\Http\Controllers\Api\VoucherController::class, 'getUserVouchers']);
+    Route::post('/vouchers/validate', [\App\Http\Controllers\Api\VoucherController::class, 'validateVoucher']);
+    Route::post('/vouchers/insert-samples', [\App\Http\Controllers\Api\VoucherController::class, 'insertSampleVouchers']);
 });
 
 // Public routes for services and events

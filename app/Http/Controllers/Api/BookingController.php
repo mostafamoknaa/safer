@@ -35,14 +35,20 @@ class BookingController extends Controller
             ->get()
             ->map(function ($booking) {
                 $hotelImages = $booking->hotel && $booking->hotel->media ? 
-                    $booking->hotel->media->where('type', 'image')->take(1)->map(function ($media) {
-                        return $media->file_url;
-                    })->values() : [];
+                    $booking->hotel->media->where('type', 'image')->map(function ($media) {
+                        return [
+                            'url' => $media->file_url,
+                            'order' => $media->order_column,
+                        ];
+                    })->sortBy('order')->take(3)->values() : [];
 
                 $roomImages = $booking->room && $booking->room->media ? 
-                    $booking->room->media->where('type', 'image')->take(1)->map(function ($media) {
-                        return $media->file_url;
-                    })->values() : [];
+                    $booking->room->media->where('type', 'image')->map(function ($media) {
+                        return [
+                            'url' => $media->file_url,
+                            'order' => $media->order_column,
+                        ];
+                    })->sortBy('order')->values() : [];
 
                 return [
                     'id' => $booking->id,
@@ -60,7 +66,11 @@ class BookingController extends Controller
                         'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
                         'type' => $booking->room->type ?? 'standard',
                         'price_per_night' => (float) $booking->room->price_per_night,
+                        'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
+                        'service_fee' => (float) ($booking->room->service_fee ?? 0),
                         'beds_count' => $booking->room->beds_count,
+                        'bathrooms_count' => $booking->room->bathrooms_count,
+                        'rooms_count' => $booking->room->rooms_count,
                         'images' => $roomImages,
                     ] : null,
                     'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
@@ -95,11 +105,21 @@ class BookingController extends Controller
             ], 403);
         }
 
-        $booking->load(['hotel', 'hotel.province', 'room', 'room.media', 'payments']);
+        $booking->load(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media', 'payments']);
 
         $roomImages = $booking->room && $booking->room->media ? $booking->room->media->where('type', 'image')->map(function ($media) {
-            return $media->file_url;
-        })->values() : [];
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values() : [];
+
+        $hotelImages = $booking->hotel && $booking->hotel->media ? $booking->hotel->media->where('type', 'image')->map(function ($media) {
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values() : [];
 
         $payments = $booking->payments->map(function ($payment) {
             return [
@@ -122,7 +142,9 @@ class BookingController extends Controller
                     'id' => $booking->hotel->id,
                     'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
                     'address' => app()->getLocale() === 'ar' ? $booking->hotel->address_ar : $booking->hotel->address_en,
+                    'images' => $hotelImages,
                     'province' => $booking->hotel->province ? [
+                        'id' => $booking->hotel->province->id,
                         'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                     ] : null,
                     'website_url' => $booking->hotel->website_url,
