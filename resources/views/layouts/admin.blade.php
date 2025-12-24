@@ -212,6 +212,13 @@
                 'label' => __('admin.nav.events'),
                 'disabled' => ! RouteFacade::has('admin.events.index'),
             ],
+            [
+                'route' => RouteFacade::has('admin.notifications.index') ? route('admin.notifications.index') : '#',
+                'icon' => 'fas fa-calendar-alt',
+                'active' => RouteFacade::has('admin.notifications.index') ? request()->routeIs('admin.notifications.*') : false,
+                'label' => __('admin.nav.events'),
+                'disabled' => ! RouteFacade::has('admin.notifications.index'),
+            ],
         ];
     @endphp
 
