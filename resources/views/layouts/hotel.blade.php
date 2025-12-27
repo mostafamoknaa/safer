@@ -132,7 +132,7 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>
@@ -198,7 +198,7 @@
                     </button>
                 </div>
 
-                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>
@@ -261,11 +261,18 @@
                         <p class="text-sm text-slate-500 truncate mt-0.5">@yield('page-subtitle', __('hotel.layout.default_subheading'))</p>
                     </div>
                 </div>
-                <div class="hidden sm:flex items-center gap-3 ml-4">
+                <div class="hidden sm:flex items-center gap-4 ml-4">
                     <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-sm text-slate-600">
                         <i class="fas fa-user-circle"></i>
                         <span class="font-medium">{{ auth()->user()->name }}</span>
                     </div>
+                    <form method="POST" action="{{ route('hotel.logout') }}">
+                        @csrf
+                        <button type="submit" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 text-sm text-rose-600 hover:bg-rose-100 transition shadow-sm border border-rose-100">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="font-semibold">{{ __('hotel.layout.logout') }}</span>
+                        </button>
+                    </form>
                 </div>
             </header>
 

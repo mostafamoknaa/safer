@@ -98,6 +98,14 @@ class HotelRoomController extends Controller
             'bathrooms_count' => ['required', 'integer', 'min:1'],
             'rooms_count' => ['required', 'integer', 'min:1'],
             'is_active' => ['sometimes', 'boolean'],
+            'checkin_time' => ['nullable', 'date_format:H:i'],
+            'checkout_time' => ['nullable', 'date_format:H:i'],
+            'services' => ['nullable', 'array'],
+            'blocked_slots' => ['nullable', 'array'],
+            'blocked_slots.*.from_date' => ['nullable', 'date'],
+            'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],
+            'blocked_slots.*.to_date' => ['nullable', 'date'],
+            'blocked_slots.*.to_time' => ['nullable', 'date_format:H:i'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
         ];
@@ -107,7 +115,16 @@ class HotelRoomController extends Controller
             $rules['hotel_id'] = ['required', 'exists:hotels,id'];
         }
 
-        return $request->validate($rules) + [
+        $validated = $request->validate($rules);
+        
+        // Filter out empty blocked slots
+        if (isset($validated['blocked_slots'])) {
+            $validated['blocked_slots'] = array_filter($validated['blocked_slots'], function($slot) {
+                return !empty($slot['from_date']) || !empty($slot['to_date']);
+            });
+        }
+
+        return $validated + [
             'is_active' => $request->boolean('is_active'),
         ];
     }

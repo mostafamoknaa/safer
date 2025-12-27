@@ -17,6 +17,7 @@ class Hotel extends Model
         'address_ar',
         'address_en',
         'province_id',
+        'country',
         'type',
         'website_url',
         'about_info_ar',

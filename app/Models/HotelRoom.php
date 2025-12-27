@@ -25,6 +25,7 @@ class HotelRoom extends Model
         'checkin_time',
         'checkout_time',
         'blocked_slots',
+        'services',
     ];
 
     protected $casts = [
@@ -33,6 +34,7 @@ class HotelRoom extends Model
         'service_fee' => 'decimal:2',
         'is_active' => 'boolean',
         'blocked_slots' => 'array',
+        'services' => 'array',
     ];
 
     public function hotel(): BelongsTo

@@ -17,6 +17,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'hotel.manager' => \App\Http\Middleware\EnsureHotelManager::class,
         ]);
         
+        $middleware->trustProxies(at: '*');
+        
+        $middleware->validateCsrfTokens(except: [
+            'hotel/login',
+            'hotel/logout',
+        ]);
+        
         // تعطيل redirect الافتراضي للمستخدمين غير المسجلين
         $middleware->redirectGuestsTo(function ($request) {
             if ($request->is('admin/*')) {

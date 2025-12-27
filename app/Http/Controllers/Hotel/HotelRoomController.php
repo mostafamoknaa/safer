@@ -152,6 +152,7 @@ class HotelRoomController extends Controller
             'is_active' => ['sometimes', 'boolean'],
             'checkin_time' => ['nullable', 'date_format:H:i'],
             'checkout_time' => ['nullable', 'date_format:H:i'],
+            'services' => ['nullable', 'array'],
             'blocked_slots' => ['nullable', 'array'],
             'blocked_slots.*.from_date' => ['nullable', 'date'],
             'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],
