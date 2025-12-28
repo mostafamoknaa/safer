@@ -13,7 +13,8 @@ class PrivateCar extends Model
     protected $fillable = [
         'name_ar',
         'name_en',
-        'price',
+        'price_per_day',
+        'price_per_hour',
         'seats_count',
         'image',
         'max_speed',
@@ -25,7 +26,8 @@ class PrivateCar extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price_per_day' => 'decimal:2',
+        'price_per_hour' => 'decimal:2',
         'seats_count' => 'integer',
         'max_speed' => 'integer',
         'acceleration' => 'decimal:2',
