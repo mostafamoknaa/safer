@@ -84,6 +84,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/support/insert-contacts', [\App\Http\Controllers\Api\SupportController::class, 'insertContactLinks']);
     Route::post('/support/insert-faqs', [\App\Http\Controllers\Api\SupportController::class, 'insertFAQs']);
 
+    // User Hotels routes
+    Route::get('/user/hotels', [\App\Http\Controllers\Api\UserHotelController::class, 'getUserHotels']);
+    Route::post('/user/hotels', [\App\Http\Controllers\Api\UserHotelController::class, 'store']);
+    Route::get('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'show']);
+    Route::post('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'update']);
+
     // Wallet routes
     Route::get('/wallet', [\App\Http\Controllers\Api\WalletController::class, 'getWallet']);
     Route::get('/wallet/transactions', [\App\Http\Controllers\Api\WalletController::class, 'getTransactions']);

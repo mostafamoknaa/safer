@@ -42,8 +42,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('faqs', FaqController::class)
             ->except('show');
 
-        Route::resource('hotels', HotelController::class)
-            ->except('show');
+        Route::resource('hotels', HotelController::class);
 
         Route::resource('hotel-rooms', HotelRoomController::class)
             ->except('show');

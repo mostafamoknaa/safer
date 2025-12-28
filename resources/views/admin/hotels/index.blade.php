@@ -25,7 +25,9 @@
                         <th class="px-4 py-3">{{ __('admin.hotels.table.name') }}</th>
                         <th class="px-4 py-3">{{ __('admin.hotels.table.address') }}</th>
                         <th class="px-4 py-3">{{ __('admin.hotels.table.province') }}</th>
-                        <th class="px-4 py-3">{{ __('admin.hotels.table.website') }}</th>
+                        <th class="px-4 py-3">المالك</th>
+                        <th class="px-4 py-3">السعر</th>
+                        <th class="px-4 py-3">الهاتف</th>
                         <th class="px-4 py-3 text-center">{{ __('admin.hotels.table.status') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('admin.hotels.table.actions') }}</th>
                     </tr>
@@ -36,15 +38,9 @@
                             <td class="px-4 py-4 font-semibold text-slate-800">{{ app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en }}</td>
                             <td class="px-4 py-4 text-slate-600">{{ \Illuminate\Support\Str::limit(app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en, 50) }}</td>
                             <td class="px-4 py-4 text-slate-600">{{ app()->getLocale() === 'ar' ? ($hotel->province->name_ar ?? '-') : ($hotel->province->name_en ?? '-') }}</td>
-                            <td class="px-4 py-4">
-                                @if($hotel->website_url)
-                                    <a href="{{ $hotel->website_url }}" target="_blank" rel="noopener" class="text-sky-600 hover:text-sky-700 hover:underline">
-                                        {{ \Illuminate\Support\Str::limit($hotel->website_url, 30) }}
-                                    </a>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
-                            </td>
+                            <td class="px-4 py-4 text-slate-600">{{ $hotel->user ? $hotel->user->name : 'إدارة النظام' }}</td>
+                            <td class="px-4 py-4 text-slate-600">{{ $hotel->price ? number_format($hotel->price, 2) . ' ر.س' : '-' }}</td>
+                            <td class="px-4 py-4 text-slate-600">{{ $hotel->phone ?? '-' }}</td>
                             <td class="px-4 py-4 text-center">
                                 @if ($hotel->is_active)
                                     <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
@@ -60,6 +56,11 @@
                             </td>
                             <td class="px-4 py-4 text-center">
                                 <div class="flex items-center justify-center gap-2">
+                                    <a href="{{ route('admin.hotels.show', $hotel) }}"
+                                       class="inline-flex items-center gap-1 rounded-lg bg-green-500/10 px-3 py-1.5 text-xs font-semibold text-green-600 hover:bg-green-500/20">
+                                        <i class="fas fa-eye"></i>
+                                        عرض
+                                    </a>
                                     <a href="{{ route('admin.hotel-rooms.index', ['hotel_id' => $hotel->id]) }}"
                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-500/20">
                                         <i class="fas fa-bed"></i>
@@ -85,7 +86,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">
+                            <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">
                                 {{ __('admin.hotels.empty') }}
                             </td>
                         </tr>
