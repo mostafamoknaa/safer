@@ -63,7 +63,14 @@ class HotelRoomController extends Controller
         // منع تغيير الفندق عند التعديل
         $data['hotel_id'] = $hotelRoom->hotel_id;
 
+        // Debug: Log the data being updated
+        \Log::info('Admin Hotel Room Update Data:', $data);
+        \Log::info('Admin Original Room Data:', $hotelRoom->toArray());
+
         $hotelRoom->update($data);
+
+        // Debug: Log after update
+        \Log::info('Admin Room After Update:', $hotelRoom->fresh()->toArray());
 
         $this->handleMedia($request, $hotelRoom);
 
@@ -90,6 +97,43 @@ class HotelRoomController extends Controller
             ->with('success', trans('admin.hotel_rooms.messages.deleted'));
     }
 
+    public function clone(Request $request, HotelRoom $hotelRoom): RedirectResponse
+    {
+        $request->validate([
+            'clone_count' => 'required|integer|min:1|max:50'
+        ]);
+
+        $cloneCount = $request->input('clone_count');
+        
+        for ($i = 0; $i < $cloneCount; $i++) {
+            $clonedRoom = $hotelRoom->replicate();
+            $clonedRoom->save();
+
+            // Clone media files
+            foreach ($hotelRoom->media as $media) {
+                $originalPath = $media->file_path;
+                $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+                $newPath = 'hotels/' . $clonedRoom->hotel_id . '/rooms/' . $clonedRoom->id . '/images/' . uniqid() . '.' . $extension;
+                
+                if (Storage::disk('public')->exists($originalPath)) {
+                    Storage::disk('public')->copy($originalPath, $newPath);
+                    
+                    HotelMedia::create([
+                        'hotel_id' => $clonedRoom->hotel_id,
+                        'room_id' => $clonedRoom->id,
+                        'type' => $media->type,
+                        'file_path' => $newPath,
+                        'order_column' => $media->order_column,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('admin.hotel-rooms.index', ['hotel_id' => $hotelRoom->hotel_id])
+            ->with('success', "تم استنساخ الغرفة {$cloneCount} مرة بنجاح");
+    }
+
     protected function validatedData(Request $request, ?HotelRoom $hotelRoom = null): array
     {
         $rules = [
@@ -98,6 +142,14 @@ class HotelRoomController extends Controller
             'bathrooms_count' => ['required', 'integer', 'min:1'],
             'rooms_count' => ['required', 'integer', 'min:1'],
             'is_active' => ['sometimes', 'boolean'],
+            'checkin_time' => ['nullable', 'date_format:H:i'],
+            'checkout_time' => ['nullable', 'date_format:H:i'],
+            'services' => ['nullable', 'array'],
+            'blocked_slots' => ['nullable', 'array'],
+            'blocked_slots.*.from_date' => ['nullable', 'date'],
+            'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],
+            'blocked_slots.*.to_date' => ['nullable', 'date'],
+            'blocked_slots.*.to_time' => ['nullable', 'date_format:H:i'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
         ];
@@ -107,7 +159,16 @@ class HotelRoomController extends Controller
             $rules['hotel_id'] = ['required', 'exists:hotels,id'];
         }
 
-        return $request->validate($rules) + [
+        $validated = $request->validate($rules);
+        
+        // Filter out empty blocked slots
+        if (isset($validated['blocked_slots'])) {
+            $validated['blocked_slots'] = array_filter($validated['blocked_slots'], function($slot) {
+                return !empty($slot['from_date']) || !empty($slot['to_date']);
+            });
+        }
+
+        return $validated + [
             'is_active' => $request->boolean('is_active'),
         ];
     }

@@ -39,7 +39,8 @@ class PrivateCarController extends Controller
         $validated = $request->validate([
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
+            'price_per_day' => 'required|numeric|min:0|max:999999.99',
+            'price_per_hour' => 'required|numeric|min:0|max:999999.99',
             'seats_count' => 'required|integer|min:1|max:50',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'max_speed' => 'nullable|integer|min:0|max:500',
@@ -77,7 +78,8 @@ class PrivateCarController extends Controller
         $validated = $request->validate([
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
+            'price_per_day' => 'required|numeric|min:0|max:999999.99',
+            'price_per_hour' => 'required|numeric|min:0|max:999999.99',
             'seats_count' => 'required|integer|min:1|max:50',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'max_speed' => 'nullable|integer|min:0|max:500',

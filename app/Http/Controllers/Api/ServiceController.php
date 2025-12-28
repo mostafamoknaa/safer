@@ -21,9 +21,18 @@ class ServiceController extends Controller
     public function getBuses(): JsonResponse
     {
         $buses = Bus::where('is_active', true)
+            ->with(['trips' => function($query) {
+                $query->whereDate('trip_date', '>=', now())
+                      ->with(['bookedSeats']);
+            }])
             ->select('id', 'name_ar', 'name_en', 'total_seats', 'type')
             ->get()
             ->map(function ($bus) {
+                // Get all reserved seats for this bus from current and future trips
+                $reservedSeats = $bus->trips->flatMap(function($trip) {
+                    return $trip->bookedSeats->pluck('seat_number');
+                })->unique()->values()->toArray();
+                
                 // Determine bus size and numbering system
                 $busSize = $bus->total_seats > 30 ? 'large' : 'small';
                 $numberingSystem = $busSize === 'large' ? 'alphanumeric' : 'numeric';
@@ -32,6 +41,8 @@ class ServiceController extends Controller
                     'id' => $bus->id,
                     'name' => app()->getLocale() === 'ar' ? $bus->name_ar : $bus->name_en,
                     'total_seats' => $bus->total_seats,
+                    'reserved_seats' => $reservedSeats,
+                    'available_seats' => $bus->total_seats - count($reservedSeats),
                     'size' => $busSize,
                     'numbering_system' => $numberingSystem,
                     'type' => $bus->type ?? 'standard',
@@ -49,7 +60,7 @@ class ServiceController extends Controller
      */
     public function getTrips(Request $request): JsonResponse
     {
-        $query = Trip::with('bus')
+        $query = Trip::with(['bus', 'bookedSeats'])
             ->where('is_active', true)
             ->whereDate('trip_date', '>=', now());
 
@@ -76,6 +87,8 @@ class ServiceController extends Controller
         $trips = $query->orderBy('trip_date')
             ->get()
             ->map(function ($trip) {
+                $reservedSeats = $trip->bookedSeats->pluck('seat_number')->toArray();
+                
                 return [
                     'id' => $trip->id,
                     'bus_id' => $trip->bus_id,
@@ -86,8 +99,9 @@ class ServiceController extends Controller
                     'trip_date' => $trip->trip_date->format('Y-m-d'),
                     'trip_time' => $trip->trip_time,
                     'duration_minutes' => $trip->duration_minutes,
-                    'available_seats' => $trip->available_seats_count,
                     'total_seats' => $trip->bus->total_seats,
+                    'reserved_seats' => $reservedSeats,
+                    'available_seats' => $trip->bus->total_seats - count($reservedSeats),
                 ];
             });
 
@@ -137,8 +151,8 @@ class ServiceController extends Controller
                 return [
                     'id' => $car->id,
                     'name' => app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en,
-                    'hourly_rate' => (float) $car->price,
-                    'price_per_hour' => (float) $car->price,
+                    'price_per_day' => (float) $car->price_per_day,
+                    'price_per_hour' => (float) $car->price_per_hour,
                     'seats_count' => $car->seats_count,
                     'image' => $car->image_url,
                     'max_speed' => $car->max_speed,
@@ -341,19 +355,5 @@ class ServiceController extends Controller
         ]);
     }
 
-    /**
-     * Create unified reservation for bus or private car.
-     */
-    public function createReservation(Request $request): JsonResponse
-    {
-        $request->validate([
-            'service_type' => 'required|in:bus,private_car',
-        ]);
 
-        if ($request->service_type === 'bus') {
-            return $this->createBusRequest($request);
-        } else {
-            return $this->createPrivateCarRequest($request);
-        }
-    }
 }
