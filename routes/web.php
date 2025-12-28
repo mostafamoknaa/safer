@@ -47,6 +47,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('hotel-rooms', HotelRoomController::class)
             ->except('show');
+        Route::post('hotel-rooms/{hotelRoom}/update', [HotelRoomController::class, 'update'])
+            ->name('hotel-rooms.update');
+        Route::post('hotel-rooms/{hotelRoom}/clone', [HotelRoomController::class, 'clone'])
+            ->name('hotel-rooms.clone');
 
         Route::resource('users', UserController::class)
             ->only(['index', 'destroy']);
@@ -188,6 +192,10 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
 
         Route::resource('hotel-rooms', \App\Http\Controllers\Hotel\HotelRoomController::class)
             ->except('show');
+        Route::post('hotel-rooms/{hotelRoom}/update', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'update'])
+            ->name('hotel-rooms.update');
+        Route::post('hotel-rooms/{hotelRoom}/clone', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'clone'])
+            ->name('hotel-rooms.clone');
 
         Route::get('conversations', [\App\Http\Controllers\Hotel\ConversationController::class, 'index'])
             ->name('conversations.index');
