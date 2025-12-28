@@ -85,6 +85,11 @@
                                         <i class="fas fa-pen-to-square"></i>
                                         {{ __('admin.hotel_rooms.actions.edit') }}
                                     </a>
+                                    <button onclick="openCloneModal({{ $room->id }})"
+                                            class="inline-flex items-center gap-1 rounded-lg bg-green-500/10 px-3 py-1.5 text-xs font-semibold text-green-600 hover:bg-green-500/20">
+                                        <i class="fas fa-copy"></i>
+                                        استنساخ
+                                    </button>
                                     <form method="POST" action="{{ route('admin.hotel-rooms.destroy', $room) }}"
                                           onsubmit="return confirm('{{ __('admin.hotel_rooms.confirm_delete') }}')">
                                         @csrf
@@ -113,5 +118,50 @@
             {{ $rooms->links() }}
         </div>
     </div>
+
+    <!-- Clone Modal -->
+    <div id="cloneModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
+        <div class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">استنساخ الغرفة</h3>
+            <form id="cloneForm" method="POST">
+                @csrf
+                <div class="mb-4">
+                    <label for="clone_count" class="block text-sm font-medium text-slate-700 mb-2">عدد النسخ:</label>
+                    <input type="number" id="clone_count" name="clone_count" min="1" max="50" value="1" 
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeCloneModal()" 
+                            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        إلغاء
+                    </button>
+                    <button type="submit" 
+                            class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+                        استنساخ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openCloneModal(roomId) {
+            document.getElementById('cloneForm').action = `/admin/hotel-rooms/${roomId}/clone`;
+            document.getElementById('cloneModal').classList.remove('hidden');
+            document.getElementById('cloneModal').classList.add('flex');
+        }
+
+        function closeCloneModal() {
+            document.getElementById('cloneModal').classList.add('hidden');
+            document.getElementById('cloneModal').classList.remove('flex');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('cloneModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCloneModal();
+            }
+        });
+    </script>
 @endsection
 

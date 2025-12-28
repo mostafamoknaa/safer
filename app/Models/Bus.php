@@ -14,6 +14,7 @@ class Bus extends Model
         'name_ar',
         'name_en',
         'total_seats',
+        'type',
         'is_active',
     ];
 
@@ -28,6 +29,16 @@ class Bus extends Model
     public function trips(): HasMany
     {
         return $this->hasMany(Trip::class);
+    }
+
+    /**
+     * Get reserved seats for this bus.
+     */
+    public function reservedSeats(): HasMany
+    {
+        return $this->hasMany(BusSeat::class, 'trip_id', 'id')
+            ->join('trips', 'bus_seats.trip_id', '=', 'trips.id')
+            ->where('trips.bus_id', $this->id);
     }
 
     /**

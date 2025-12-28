@@ -39,6 +39,7 @@ class BusController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
             'total_seats' => 'required|integer|min:1|max:200',
+            'type' => 'required|in:big,small',
             'is_active' => 'boolean',
         ]);
 
@@ -66,6 +67,7 @@ class BusController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
             'total_seats' => 'required|integer|min:1|max:200',
+            'type' => 'required|in:big,small',
             'is_active' => 'boolean',
         ]);
 

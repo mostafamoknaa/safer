@@ -24,7 +24,8 @@
                     <tr>
                         <th class="px-4 py-3">{{ __('admin.private_cars.table.image') }}</th>
                         <th class="px-4 py-3">{{ __('admin.private_cars.table.name') }}</th>
-                        <th class="px-4 py-3">{{ __('admin.private_cars.table.price') }}</th>
+                        <th class="px-4 py-3">السعر لليوم الواحد</th>
+                        <th class="px-4 py-3">السعر للساعة الواحدة</th>
                         <th class="px-4 py-3">{{ __('admin.private_cars.table.seats') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('admin.private_cars.table.status') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('admin.private_cars.table.actions') }}</th>
@@ -45,7 +46,8 @@
                             <td class="px-4 py-4 font-semibold text-slate-800">
                                 {{ app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en }}
                             </td>
-                            <td class="px-4 py-4 font-semibold text-slate-800">{{ number_format($car->price, 2) }} {{ __('admin.private_cars.currency') }}</td>
+                            <td class="px-4 py-4 font-semibold text-slate-800">{{ number_format($car->price_per_day, 2) }} {{ __('admin.private_cars.currency') }}</td>
+                            <td class="px-4 py-4 font-semibold text-slate-800">{{ number_format($car->price_per_hour, 2) }} {{ __('admin.private_cars.currency') }}</td>
                             <td class="px-4 py-4 text-slate-600">{{ $car->seats_count }}</td>
                             <td class="px-4 py-4 text-center">
                                 @if ($car->is_active)

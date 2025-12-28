@@ -106,7 +106,14 @@ class HotelRoomController extends Controller
         // منع تغيير الفندق عند التعديل
         $data['hotel_id'] = $hotelRoom->hotel_id;
 
+        // Debug: Log the data being updated
+        \Log::info('Hotel Room Update Data:', $data);
+        \Log::info('Original Room Data:', $hotelRoom->toArray());
+
         $hotelRoom->update($data);
+
+        // Debug: Log after update
+        \Log::info('Room After Update:', $hotelRoom->fresh()->toArray());
 
         $this->handleMedia($request, $hotelRoom);
 
@@ -142,6 +149,51 @@ class HotelRoomController extends Controller
             ->with('success', trans('hotel.hotel_rooms.messages.deleted'));
     }
 
+    /**
+     * Clone the specified room.
+     */
+    public function clone(Request $request, HotelRoom $hotelRoom): RedirectResponse
+    {
+        // التحقق من أن المستخدم مسئول عن فندق هذه الغرفة
+        if (!auth()->user()->managesHotel($hotelRoom->hotel_id)) {
+            abort(403, 'ليس لديك صلاحية لاستنساخ هذه الغرفة.');
+        }
+
+        $request->validate([
+            'clone_count' => 'required|integer|min:1|max:50'
+        ]);
+
+        $cloneCount = $request->input('clone_count');
+        
+        for ($i = 0; $i < $cloneCount; $i++) {
+            $clonedRoom = $hotelRoom->replicate();
+            $clonedRoom->save();
+
+            // Clone media files
+            foreach ($hotelRoom->media as $media) {
+                $originalPath = $media->file_path;
+                $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+                $newPath = 'hotels/' . $clonedRoom->hotel_id . '/rooms/' . $clonedRoom->id . '/images/' . uniqid() . '.' . $extension;
+                
+                if (Storage::disk('public')->exists($originalPath)) {
+                    Storage::disk('public')->copy($originalPath, $newPath);
+                    
+                    HotelMedia::create([
+                        'hotel_id' => $clonedRoom->hotel_id,
+                        'room_id' => $clonedRoom->id,
+                        'type' => $media->type,
+                        'file_path' => $newPath,
+                        'order_column' => $media->order_column,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('hotel.hotel-rooms.index', ['hotel_id' => $hotelRoom->hotel_id])
+            ->with('success', "تم استنساخ الغرفة {$cloneCount} مرة بنجاح");
+    }
+
     protected function validatedData(Request $request, ?HotelRoom $hotelRoom = null): array
     {
         $rules = [
@@ -152,6 +204,7 @@ class HotelRoomController extends Controller
             'is_active' => ['sometimes', 'boolean'],
             'checkin_time' => ['nullable', 'date_format:H:i'],
             'checkout_time' => ['nullable', 'date_format:H:i'],
+            'services' => ['nullable', 'array'],
             'blocked_slots' => ['nullable', 'array'],
             'blocked_slots.*.from_date' => ['nullable', 'date'],
             'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],
