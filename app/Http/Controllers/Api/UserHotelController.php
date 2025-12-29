@@ -31,7 +31,15 @@ class UserHotelController extends Controller
                     'phone_2' => $hotel->phone_2,
                     'description' => app()->getLocale() === 'ar' ? $hotel->description_ar : $hotel->description_en,
                     'is_active' => $hotel->is_active,
+                    'schedule_type' => $hotel->schedule_type,
+                    'hourly_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
+                    'booking_settings' => $hotel->booking_settings,
+                    'week_schedule' => $hotel->week_schedule,
+                    'blocked_dates' => $hotel->blocked_dates,
+                    'is_active' => $hotel->is_active,
                     'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
+                    'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
+                    
                 ];
             });
 
@@ -134,25 +142,27 @@ class UserHotelController extends Controller
             'phone_2' => 'nullable|string|max:20',
             'description_ar' => 'required|string|max:2000',
             'description_en' => 'required|string|max:2000',
+            'schedule_type' => 'required|in:hourly,daily',
+            'hourly_price' => 'nullable|numeric|min:0',
+            'booking_settings' => 'nullable|array',
+            'booking_settings.min_hours' => 'nullable|integer|min:1',
+            'booking_settings.max_hours' => 'nullable|integer|min:1',
+            'booking_settings.advance_booking_days' => 'nullable|integer|min:0',
+            'week_schedule' => 'nullable|array',
+            'week_schedule.*.day' => 'required|string|in:saturday,sunday,monday,tuesday,wednesday,thursday,friday',
+            'week_schedule.*.is_available' => 'required|boolean',
+            'week_schedule.*.time_slots' => 'nullable|array',
+            'week_schedule.*.time_slots.*.from' => 'nullable|date_format:H:i',
+            'week_schedule.*.time_slots.*.to' => 'nullable|date_format:H:i',
+            'blocked_dates' => 'nullable|array',
+            'blocked_dates.*.date' => 'required|date',
+            'blocked_dates.*.reason' => 'nullable|string|max:255',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
-            'delete_images' => 'nullable|array',
-            'delete_images.*' => 'integer|exists:hotel_media,id',
         ]);
 
         $hotel->update($validated);
 
-        // Delete selected images
-        if ($request->has('delete_images')) {
-            $mediaToDelete = HotelMedia::whereIn('id', $request->delete_images)
-                ->where('hotel_id', $hotel->id)
-                ->get();
-            
-            foreach ($mediaToDelete as $media) {
-                Storage::disk('public')->delete($media->file_path);
-                $media->delete();
-            }
-        }
 
         // Add new images
         if ($request->hasFile('images')) {

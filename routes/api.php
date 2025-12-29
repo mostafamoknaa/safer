@@ -84,6 +84,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/support/insert-contacts', [\App\Http\Controllers\Api\SupportController::class, 'insertContactLinks']);
     Route::post('/support/insert-faqs', [\App\Http\Controllers\Api\SupportController::class, 'insertFAQs']);
 
+    // User Activities routes
+    Route::get('/user/activities', [\App\Http\Controllers\Api\UserActivityController::class, 'getUserActivities']);
+    Route::post('/user/activities', [\App\Http\Controllers\Api\UserActivityController::class, 'store']);
+    Route::post('/user/activities/{activity}', [\App\Http\Controllers\Api\UserActivityController::class, 'update']);
+
     // User Hotels routes
     Route::get('/user/hotels', [\App\Http\Controllers\Api\UserHotelController::class, 'getUserHotels']);
     Route::post('/user/hotels', [\App\Http\Controllers\Api\UserHotelController::class, 'store']);
