@@ -146,15 +146,17 @@ class ServiceController extends Controller
     public function getPrivateCars(): JsonResponse
     {
         $cars = PrivateCar::where('is_active', true)
+            ->with('media')
             ->get()
             ->map(function ($car) {
                 return [
                     'id' => $car->id,
                     'name' => app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en,
+                    'car_model' => $car->car_model,
                     'price_per_day' => (float) $car->price_per_day,
                     'price_per_hour' => (float) $car->price_per_hour,
                     'seats_count' => $car->seats_count,
-                    'image' => $car->image_url,
+                    'images' => $car->media->map(fn($media) => asset('storage/' . $media->file_path)),
                     'max_speed' => $car->max_speed,
                     'acceleration' => $car->acceleration ? (float) $car->acceleration : null,
                     'power' => $car->power,

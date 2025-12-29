@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-2 sm:grid-cols-2">
         <div class="grid gap-2">
             <label for="seats_count" class="text-sm font-medium text-slate-600">
                 {{ __('admin.private_cars.form.seats_count') }}
@@ -75,19 +75,36 @@
             @enderror
         </div>
     </div>
+    
+    <div class="grid gap-2 sm:grid-cols-2">
+        <div class="grid gap-2">
+            <label for="seats_count" class="text-sm font-medium text-slate-600">
+                مودل السيارة
+            </label>
+            <input id="car_model" name="car_model" type="text"
+                   value="{{ old('car_model', $privateCar->car_model ?? '') }}"
+                   class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                   required>
+            @error('car_model')
+                <p class="text-xs text-rose-600">{{ $message }}</p>
+            @enderror
+        </div>
+    </div>
 
     <div class="grid gap-2">
-        <label for="image" class="text-sm font-medium text-slate-600">
+        <label for="images" class="text-sm font-medium text-slate-600">
             {{ __('admin.private_cars.form.image') }}
         </label>
-        <input id="image" name="image" type="file" accept="image/*"
+        <input id="images" name="images[]" type="file" accept="image/*" multiple
                class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-        @error('image')
+        @error('images')
             <p class="text-xs text-rose-600">{{ $message }}</p>
         @enderror
-        @if($editing && $privateCar->image)
-            <div class="mt-2">
-                <img src="{{ asset('storage/' . $privateCar->image) }}" alt="{{ $privateCar->name }}" class="h-32 w-32 rounded-lg object-cover">
+        @if($editing && $privateCar->media->count() > 0)
+            <div class="mt-2 grid grid-cols-3 gap-2">
+                @foreach($privateCar->media as $media)
+                    <img src="{{ asset('storage/' . $media->file_path) }}" alt="{{ $privateCar->name }}" class="h-20 w-20 rounded-lg object-cover">
+                @endforeach
             </div>
         @endif
     </div>

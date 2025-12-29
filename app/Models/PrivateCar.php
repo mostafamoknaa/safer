@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 
 class PrivateCar extends Model
 {
@@ -13,10 +13,10 @@ class PrivateCar extends Model
     protected $fillable = [
         'name_ar',
         'name_en',
+        'car_model',
         'price_per_day',
         'price_per_hour',
         'seats_count',
-        'image',
         'max_speed',
         'acceleration',
         'power',
@@ -60,10 +60,10 @@ class PrivateCar extends Model
     }
 
     /**
-     * Get the image URL.
+     * Get media for this private car.
      */
-    public function getImageUrlAttribute(): ?string
+    public function media(): HasMany
     {
-        return $this->image ? asset('storage/' . $this->image) : null;
+        return $this->hasMany(PrivateCarMedia::class);
     }
 }

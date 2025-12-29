@@ -48,20 +48,21 @@ class UserHotelController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string|max:255',
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'address_ar' => 'required|string|max:500',
-            'address_en' => 'required|string|max:500',
+            'name_ar' => 'nullable|string|max:255',
+            'name_en' => 'nullable|string|max:255',
+            'price' => 'nullable|numeric|min:0',
+            'address_ar' => 'nullable|string|max:500',
+            'address_en' => 'nullable|string|max:500',
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
-            'description_ar' => 'required|string|max:2000',
-            'description_en' => 'required|string|max:2000',
+            'description_ar' => 'nullable|string|max:2000',
+            'description_en' => 'nullable|string|max:2000',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'id_card_front' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'id_card_back' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
-            'lease_agreement' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'lease_agreement' => 'required|array|max:5',
+            'lease_agreement.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
 
         // Upload documents
@@ -76,7 +77,14 @@ class UserHotelController extends Controller
         $validated['province_id'] = 1; // Default province ID
         
         $validated['identity_images'] = $identityImages;
-        $validated['lease_agreement'] = $request->file('lease_agreement')->store('hotels/documents', 'public');
+      
+        $leaseAgreements = [];
+        if ($request->hasFile('lease_agreement')) {
+            foreach ($request->file('lease_agreement') as $index => $file) {
+                $leaseAgreements[] = $file->store('hotels/documents', 'public');
+            }
+        }
+        $validated['lease_agreement'] = $leaseAgreements;
 
         $validated['user_id'] = Auth::id();
         $validated['is_active'] = false; // Pending approval

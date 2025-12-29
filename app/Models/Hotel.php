@@ -45,6 +45,7 @@ class Hotel extends Model
         'lang' => 'float',
         'price' => 'decimal:2',
         'identity_images' => 'array',
+        'lease_agreement' => 'array',
     ];
 
     public function user(): BelongsTo

@@ -135,9 +135,16 @@
                 @if($hotel->lease_agreement)
                     <div>
                         <h3 class="text-lg font-medium text-slate-800 mb-4">عقد الإيجار</h3>
-                        <img src="{{ asset('storage/' . $hotel->lease_agreement) }}" 
-                             alt="عقد الإيجار" 
-                             class="w-full max-w-sm h-32 object-cover rounded-lg border">
+                        <div class="grid gap-2 grid-cols-2">
+                            @foreach($hotel->lease_agreement as $index => $agreement)
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">المستند {{ $index + 1 }}</label>
+                                    <img src="{{ asset('storage/' . $agreement) }}" 
+                                         alt="عقد الإيجار {{ $index + 1 }}" 
+                                         class="w-full max-w-sm h-32 object-cover rounded-lg border">
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>
