@@ -1,147 +1,225 @@
 @extends('layouts.admin')
 
-@section('title', __('admin.events.show_title'))
-@section('page-title', __('admin.events.show_heading'))
-@section('page-subtitle', __('admin.events.show_subheading'))
+@section('title', 'تفاصيل الفعالية/النشاط')
+@section('page-title', 'تفاصيل الفعالية/النشاط')
+@section('page-subtitle', 'عرض معلومات الفعالية والوثائق')
 
 @section('content')
-    <div class="grid gap-6">
-        {{-- Event Info Card --}}
+    <div class="space-y-6">
+        <!-- Event Basic Info -->
         <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
             <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900">{{ app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en }}</h3>
-                    <p class="text-sm text-slate-500 mt-1">{{ __('admin.events.show_subheading') }}</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('admin.events.edit', $event) }}"
-                       class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                <h2 class="text-xl font-semibold text-slate-900">معلومات الفعالية الأساسية</h2>
+                <div class="flex gap-2">
+                    <a href="{{ route('admin.events.edit', $event) }}" 
+                       class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
                         <i class="fas fa-edit"></i>
-                        {{ __('admin.events.actions.edit') }}
+                        تعديل
                     </a>
-                    <a href="{{ route('admin.events.index') }}"
-                       class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
+                    <a href="{{ route('admin.events.index') }}" 
+                       class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">
                         <i class="fas fa-arrow-right"></i>
-                        {{ __('admin.events.actions.back') }}
+                        العودة
                     </a>
                 </div>
             </div>
 
             <div class="grid gap-6 md:grid-cols-2">
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.location') }}</label>
-                        <p class="mt-1 font-semibold text-slate-900">{{ app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en }}</p>
-                        @if($event->location_url)
-                            <a href="{{ $event->location_url }}" target="_blank" rel="noopener" class="text-sm text-indigo-600 hover:underline mt-1 inline-block">
-                                <i class="fas fa-map-marker-alt"></i> {{ __('admin.events.view_location') }}
-                            </a>
-                        @endif
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.date') }}</label>
-                        <p class="mt-1 text-slate-700">{{ $event->event_date->format('Y-m-d H:i') }}</p>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.price') }}</label>
-                        <p class="mt-1 text-lg font-bold text-slate-900">{{ number_format($event->price, 2) }} {{ __('admin.events.currency') }}</p>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">اسم الفعالية (عربي)</label>
+                    <p class="text-slate-900 font-semibold">{{ $event->name_ar }}</p>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">اسم الفعالية (إنجليزي)</label>
+                    <p class="text-slate-900 font-semibold">{{ $event->name_en }}</p>
+                </div>
+                
+                @if($event->activity_type)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">نوع النشاط</label>
+                    <p class="text-slate-900">{{ $event->activity_type }}</p>
+                </div>
+                @endif
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">السعر</label>
+                    <p class="text-slate-900">
+                        @if($event->price_per_person)
+                            {{ number_format($event->price_per_person, 2) }} ر.س للفرد
+                        @else
+                            {{ number_format($event->price, 2) }} ر.س
+                        @endif
+                    </p>
+                </div>
+                
+                @if($event->duration)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">المدة</label>
+                    <p class="text-slate-900">{{ $event->duration }}</p>
+                </div>
+                @endif
+                
+                @if($event->phone)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الهاتف</label>
+                    <p class="text-slate-900">{{ $event->phone }}</p>
+                </div>
+                @endif
+                
+                @if($event->phone_secondary)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الهاتف الثاني</label>
+                    <p class="text-slate-900">{{ $event->phone_secondary }}</p>
+                </div>
+                @endif
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">المنظم</label>
+                    <p class="text-slate-900">{{ $event->user ? $event->user->name : 'إدارة النظام' }}</p>
+                </div>
+                
+                @if($event->event_date)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">تاريخ الفعالية</label>
+                    <p class="text-slate-900">{{ $event->event_date->format('Y-m-d H:i') }}</p>
+                </div>
+                @endif
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الموقع (عربي)</label>
+                    <p class="text-slate-900">{{ $event->location_ar }}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الموقع (إنجليزي)</label>
+                    <p class="text-slate-900">{{ $event->location_en }}</p>
+                </div>
+                
+                @if($event->description_ar)
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الوصف (عربي)</label>
+                    <p class="text-slate-900">{{ $event->description_ar }}</p>
+                </div>
+                @endif
+                
+                @if($event->description_en)
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الوصف (إنجليزي)</label>
+                    <p class="text-slate-900">{{ $event->description_en }}</p>
+                </div>
+                @endif
+            </div>
+        </div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.available') }}</label>
-                        <p class="mt-1 text-slate-700">{{ $event->available_tickets }} {{ __('admin.events.tickets') }}</p>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.sold') }}</label>
-                        <p class="mt-1 text-slate-700">{{ $event->tickets_count ?? 0 }} {{ __('admin.events.tickets') }}</p>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.remaining') }}</label>
-                        <p class="mt-1 text-lg font-bold text-emerald-600">{{ $event->remaining_tickets }} {{ __('admin.events.tickets') }}</p>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.table.status') }}</label>
-                        <div class="mt-1">
-                            @if ($event->is_active && $event->event_date >= now())
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
-                                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                                    {{ __('admin.hotels.badges.active') }}
-                                </span>
-                            @else
-                                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-                                    <span class="h-2 w-2 rounded-full bg-slate-400"></span>
-                                    {{ __('admin.hotels.badges.inactive') }}
-                                </span>
-                            @endif
+        <!-- Activity Images -->
+        @if($event->activity_images && count($event->activity_images) > 0)
+        <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6">صور النشاط</h2>
+            <div class="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                @foreach($event->activity_images as $image)
+                    <div class="relative group">
+                        <img src="{{ asset('storage/' . $image) }}" 
+                             alt="صورة النشاط" 
+                             class="w-full h-32 object-cover rounded-lg">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <a href="{{ asset('storage/' . $image) }}" 
+                               target="_blank" 
+                               class="text-white hover:text-blue-300">
+                                <i class="fas fa-expand text-xl"></i>
+                            </a>
                         </div>
                     </div>
-                </div>
+                @endforeach
             </div>
-
-            @if($event->description_ar || $event->description_en)
-                <div class="mt-6 pt-6 border-t border-slate-200">
-                    <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.events.form.description_ar') }}</label>
-                    <p class="mt-1 text-slate-700 whitespace-pre-line">{{ app()->getLocale() === 'ar' ? $event->description_ar : $event->description_en }}</p>
-                </div>
-            @endif
         </div>
+        @endif
 
-        {{-- Tickets List --}}
+        <!-- ID Documents -->
+        @if($event->id_images && count($event->id_images) > 0)
         <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
-            <h4 class="text-lg font-semibold text-slate-900 mb-4">{{ __('admin.events.tickets_heading') }}</h4>
-            
-            @if($event->tickets->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-right text-sm">
-                        <thead class="bg-slate-50 text-xs font-medium uppercase tracking-wider text-slate-500">
-                            <tr>
-                                <th class="px-4 py-3">{{ __('admin.events.ticket_reference') }}</th>
-                                <th class="px-4 py-3">{{ __('admin.service_requests.table.user') }}</th>
-                                <th class="px-4 py-3">{{ __('admin.events.tickets_count') }}</th>
-                                <th class="px-4 py-3">{{ __('admin.events.total_price') }}</th>
-                                <th class="px-4 py-3">{{ __('admin.service_requests.table.status') }}</th>
-                                <th class="px-4 py-3">{{ __('admin.service_requests.table.date') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
-                            @foreach($event->tickets as $ticket)
-                                <tr>
-                                    <td class="px-4 py-4 font-mono text-xs text-slate-600">{{ $ticket->ticket_reference }}</td>
-                                    <td class="px-4 py-4 text-slate-800">{{ $ticket->user->name }}</td>
-                                    <td class="px-4 py-4 text-slate-600">{{ $ticket->tickets_count }}</td>
-                                    <td class="px-4 py-4 font-semibold text-slate-800">{{ number_format($ticket->total_price, 2) }} {{ __('admin.events.currency') }}</td>
-                                    <td class="px-4 py-4">
-                                        @if($ticket->status === 'pending')
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-600">
-                                                {{ __('admin.service_requests.badges.pending') }}
-                                            </span>
-                                        @elseif($ticket->status === 'confirmed')
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
-                                                {{ __('admin.service_requests.badges.confirmed') }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
-                                                {{ __('admin.service_requests.badges.cancelled') }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4 text-slate-600 text-xs">{{ $ticket->created_at->format('Y-m-d H:i') }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <p class="text-sm text-slate-500 text-center py-6">{{ __('admin.events.no_tickets') }}</p>
-            @endif
+            <h2 class="text-xl font-semibold text-slate-900 mb-6">وثائق الهوية</h2>
+            <div class="grid gap-6 md:grid-cols-2">
+                @if(isset($event->id_images['front']))
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">الوجه الأمامي</label>
+                        <img src="{{ asset('storage/' . $event->id_images['front']) }}" 
+                             alt="الوجه الأمامي للهوية" 
+                             class="w-full max-w-sm h-32 object-cover rounded-lg border">
+                    </div>
+                @endif
+                @if(isset($event->id_images['back']))
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">الوجه الخلفي</label>
+                        <img src="{{ asset('storage/' . $event->id_images['back']) }}" 
+                             alt="الوجه الخلفي للهوية" 
+                             class="w-full max-w-sm h-32 object-cover rounded-lg border">
+                    </div>
+                @endif
+            </div>
         </div>
+        @endif
+
+        <!-- Booking Settings -->
+        @if($event->activity_type)
+        <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6">إعدادات الحجز</h2>
+            <div class="grid gap-6 md:grid-cols-2">
+                @if($event->max_participants)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الحد الأقصى للمشاركين</label>
+                    <p class="text-slate-900">{{ $event->max_participants }} شخص</p>
+                </div>
+                @endif
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">الحجز الفوري</label>
+                    <p class="text-slate-900">{{ $event->instant_booking ? 'مفعل' : 'غير مفعل' }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">السماح بالإلغاء</label>
+                    <p class="text-slate-900">{{ $event->allow_cancellation ? 'مسموح' : 'غير مسموح' }}</p>
+                </div>
+                
+                @if($event->cancellation_hours)
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">ساعات الإلغاء المجاني</label>
+                    <p class="text-slate-900">{{ $event->cancellation_hours }} ساعة</p>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        <!-- Status Actions -->
+        @if($event->user_id)
+        <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6">إجراءات الموافقة</h2>
+            <div class="flex gap-4">
+                @if(!$event->is_active)
+                    <form method="POST" action="{{ route('admin.events.update', $event) }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="is_active" value="1">
+                        <button type="submit" 
+                                class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">
+                            <i class="fas fa-check"></i>
+                            الموافقة على النشاط
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('admin.events.update', $event) }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="is_active" value="0">
+                        <button type="submit" 
+                                class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                            <i class="fas fa-times"></i>
+                            إلغاء تفعيل النشاط
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 @endsection
-

@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Models\PrivateCar;
 use App\Models\ServiceRequest;
 use App\Models\BusSeat;
+use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,28 @@ use Illuminate\Validation\ValidationException;
 
 class ServiceController extends Controller
 {
+    /**
+     * Get master services.
+     */
+    public function getMasterServices(): JsonResponse
+    {
+        $services = Service::where('is_active', true)
+            ->select('id', 'name_ar', 'name_en', 'image')
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'name' => app()->getLocale() === 'ar' ? $service->name_ar : $service->name_en,
+                    'image' => $service->image ? asset('storage/' . $service->image) : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $services,
+        ]);
+    }
+
     /**
      * Get available buses.
      */
@@ -146,15 +169,17 @@ class ServiceController extends Controller
     public function getPrivateCars(): JsonResponse
     {
         $cars = PrivateCar::where('is_active', true)
+            ->with('media')
             ->get()
             ->map(function ($car) {
                 return [
                     'id' => $car->id,
                     'name' => app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en,
+                    'car_model' => $car->car_model,
                     'price_per_day' => (float) $car->price_per_day,
                     'price_per_hour' => (float) $car->price_per_hour,
                     'seats_count' => $car->seats_count,
-                    'image' => $car->image_url,
+                    'images' => $car->media->map(fn($media) => asset('storage/' . $media->file_path)),
                     'max_speed' => $car->max_speed,
                     'acceleration' => $car->acceleration ? (float) $car->acceleration : null,
                     'power' => $car->power,

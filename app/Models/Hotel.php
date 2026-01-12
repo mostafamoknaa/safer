@@ -27,6 +27,19 @@ class Hotel extends Model
         'is_active',
         'lat',
         'lang',
+        'price',
+        'phone',
+        'phone_2',
+        'description_ar',
+        'description_en',
+        'user_id',
+        'identity_images',
+        'lease_agreement',
+        'schedule_type',
+        'hourly_price',
+        'booking_settings',
+        'week_schedule',
+        'blocked_dates',
     ];
 
     protected $casts = [
@@ -35,7 +48,19 @@ class Hotel extends Model
         'rate' => 'decimal:1',
         'lat' => 'float',
         'lang' => 'float',
+        'price' => 'decimal:2',
+        'hourly_price' => 'decimal:2',
+        'identity_images' => 'array',
+        'lease_agreement' => 'array',
+        'booking_settings' => 'array',
+        'week_schedule' => 'array',
+        'blocked_dates' => 'array',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function province(): BelongsTo
     {

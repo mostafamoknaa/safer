@@ -199,6 +199,13 @@
                 'disabled' => ! RouteFacade::has('admin.private-cars.index'),
             ],
             [
+                'route' => RouteFacade::has('admin.master-services.index') ? route('admin.master-services.index') : '#',
+                'icon' => 'fas fa-concierge-bell',
+                'active' => RouteFacade::has('admin.master-services.index') ? request()->routeIs('admin.master-services.*') : false,
+                'label' => __('admin.nav.services') ?? 'Services',
+                'disabled' => ! RouteFacade::has('admin.master-services.index'),
+            ],
+            [
                 'route' => RouteFacade::has('admin.service-requests.index') ? route('admin.service-requests.index') : '#',
                 'icon' => 'fas fa-clipboard-list',
                 'active' => RouteFacade::has('admin.service-requests.index') ? request()->routeIs('admin.service-requests.*') : false,

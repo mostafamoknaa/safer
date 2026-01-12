@@ -16,6 +16,7 @@ class Bus extends Model
         'total_seats',
         'type',
         'is_active',
+        'user_id',
     ];
 
     protected $casts = [
@@ -29,6 +30,14 @@ class Bus extends Model
     public function trips(): HasMany
     {
         return $this->hasMany(Trip::class);
+    }
+
+    /**
+     * Get the user that owns the bus.
+     */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

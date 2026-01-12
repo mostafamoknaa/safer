@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\HotelRoomController;
 use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\MasterServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,8 +43,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('faqs', FaqController::class)
             ->except('show');
 
-        Route::resource('hotels', HotelController::class)
-            ->except('show');
+        Route::resource('hotels', HotelController::class);
 
         Route::resource('hotel-rooms', HotelRoomController::class)
             ->except('show');
@@ -89,6 +89,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Services routes
         Route::resource('buses', \App\Http\Controllers\Admin\BusController::class);
         Route::resource('trips', \App\Http\Controllers\Admin\TripController::class);
+        Route::resource('master-services', MasterServiceController::class)->except('show');
         Route::resource('private-cars', \App\Http\Controllers\Admin\PrivateCarController::class);
         Route::resource('service-requests', \App\Http\Controllers\Admin\ServiceRequestController::class)->except(['create', 'store']);
 

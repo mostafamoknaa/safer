@@ -191,6 +191,7 @@ class BookingController extends Controller
                 'check_out_date' => 'required|date|after:check_in_date',
                 'guests_count' => 'required|integer|min:1|max:100',
                 'rooms_count' => 'required|integer|min:1|max:50',
+                'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
             ]);
 
@@ -255,6 +256,44 @@ class BookingController extends Controller
             // Calculate nights and total price
             $nights = max(1, \Carbon\Carbon::parse($validated['check_in_date'])->diffInDays($validated['check_out_date']));
             $totalPrice = $pricePerNight * $nights * $validated['rooms_count'];
+            
+            // Handle voucher if provided
+            $voucher = null;
+            $discountAmount = 0;
+            $finalPrice = $totalPrice;
+            
+            if (!empty($validated['voucher_code'])) {
+                $voucher = \App\Models\Voucher::where('code', $validated['voucher_code'])->first();
+                
+                if (!$voucher) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'كود الخصم غير موجود',
+                    ], 400);
+                }
+                
+                if (!$voucher->isValid()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'كود الخصم غير صالح أو منتهي الصلاحية',
+                    ], 400);
+                }
+                
+                // Check if user already used this voucher
+                $userVoucherUsed = \App\Models\UserVoucher::where('user_id', Auth::id())
+                    ->where('voucher_id', $voucher->id)
+                    ->exists();
+                    
+                if ($userVoucherUsed) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'تم استخدام هذا الكود من قبل',
+                    ], 400);
+                }
+                
+                $discountAmount = $voucher->calculateDiscount($totalPrice);
+                $finalPrice = $totalPrice - $discountAmount;
+            }
 
             // Create booking
             $booking = Booking::create([
@@ -266,10 +305,23 @@ class BookingController extends Controller
                 'guests_count' => $validated['guests_count'],
                 'rooms_count' => $validated['rooms_count'],
                 'price_per_night' => $pricePerNight,
-                'total_price' => $totalPrice,
+                'total_price' => $finalPrice,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
             ]);
+            
+            // Record voucher usage if applied
+            if ($voucher && $discountAmount > 0) {
+                \App\Models\UserVoucher::create([
+                    'user_id' => Auth::id(),
+                    'voucher_id' => $voucher->id,
+                    'booking_id' => $booking->id,
+                    'discount_amount' => $discountAmount,
+                    'used_at' => now(),
+                ]);
+                
+                $voucher->increment('used_count');
+            }
 
             return response()->json([
                 'success' => true,
@@ -277,8 +329,11 @@ class BookingController extends Controller
                 'data' => [
                     'id' => $booking->id,
                     'booking_reference' => $booking->booking_reference,
-                    'total_price' => $totalPrice,
+                    'original_price' => $totalPrice,
+                    'discount_amount' => $discountAmount,
+                    'final_price' => $finalPrice,
                     'nights' => $nights,
+                    'voucher_applied' => $voucher ? $voucher->code : null,
                 ],
             ], 201);
 

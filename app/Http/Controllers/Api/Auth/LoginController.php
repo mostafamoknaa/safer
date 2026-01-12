@@ -93,17 +93,9 @@ class LoginController extends Controller
     {
         try {
             $user = $request->user();
-
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'phone' => $user->phone,
-                    ],
-                ],
+                'data' => $user,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -122,6 +114,8 @@ class LoginController extends Controller
             'email' => ['nullable', 'string', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'password' => ['nullable', 'string', 'min:8'],
+
         ]);
     
         $user = auth()->user(); // get authenticated user
