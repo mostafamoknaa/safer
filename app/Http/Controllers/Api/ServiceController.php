@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Models\PrivateCar;
 use App\Models\ServiceRequest;
 use App\Models\BusSeat;
+use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,28 @@ use Illuminate\Validation\ValidationException;
 
 class ServiceController extends Controller
 {
+    /**
+     * Get master services.
+     */
+    public function getMasterServices(): JsonResponse
+    {
+        $services = Service::where('is_active', true)
+            ->select('id', 'name_ar', 'name_en', 'image')
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'name' => app()->getLocale() === 'ar' ? $service->name_ar : $service->name_en,
+                    'image' => $service->image ? asset('storage/' . $service->image) : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $services,
+        ]);
+    }
+
     /**
      * Get available buses.
      */

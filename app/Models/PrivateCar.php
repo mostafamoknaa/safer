@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 class PrivateCar extends Model
@@ -23,6 +24,7 @@ class PrivateCar extends Model
         'notes_ar',
         'notes_en',
         'is_active',
+        'user_id',
     ];
 
     protected $casts = [
@@ -49,6 +51,14 @@ class PrivateCar extends Model
     public function getNameAttribute(): string
     {
         return app()->getLocale() === 'ar' ? $this->name_ar : $this->name_en;
+    }
+
+    /**
+     * Get the user that owns the private car.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

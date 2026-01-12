@@ -38,7 +38,6 @@ class UserHotelController extends Controller
                     'blocked_dates' => $hotel->blocked_dates,
                     'is_active' => $hotel->is_active,
                     'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
-                    'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
                     
                 ];
             });
@@ -71,6 +70,12 @@ class UserHotelController extends Controller
             'id_card_back' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'lease_agreement' => 'required|array|max:5',
             'lease_agreement.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'services' => 'nullable|array',
+            'services.*' => 'exists:services,id',
+            'lat' => 'required|numeric',
+            'lang' => 'required|numeric',
+            'country' => 'nullable|string|max:255',
+            'website_url' => 'nullable|string|max:255',
         ]);
 
         // Upload documents
@@ -93,6 +98,19 @@ class UserHotelController extends Controller
             }
         }
         $validated['lease_agreement'] = $leaseAgreements;
+
+        // Process services
+        if ($request->has('services')) {
+            $services = \App\Models\Service::whereIn('id', $request->services)->get();
+            $validated['services'] = $services->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'name_ar' => $service->name_ar,
+                    'name_en' => $service->name_en,
+                    'image' => $service->image,
+                ];
+            })->toArray();
+        }
 
         $validated['user_id'] = Auth::id();
         $validated['is_active'] = false; // Pending approval
@@ -155,11 +173,29 @@ class UserHotelController extends Controller
             'week_schedule.*.time_slots.*.from' => 'nullable|date_format:H:i',
             'week_schedule.*.time_slots.*.to' => 'nullable|date_format:H:i',
             'blocked_dates' => 'nullable|array',
-            'blocked_dates.*.date' => 'required|date',
+            'blocked_dates.*.date' => 'required|date_format:Y-m-d',
             'blocked_dates.*.reason' => 'nullable|string|max:255',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'services' => 'nullable|array',
+            'services.*' => 'exists:services,id',
+            'lat' => 'required|numeric',
+            'lang' => 'required|numeric',
+            'country' => 'nullable|string|max:255',
+            'website_url' => 'nullable|string|max:255',
         ]);
+
+        if ($request->has('services')) {
+            $services = \App\Models\Service::whereIn('id', $request->services)->get();
+            $validated['services'] = $services->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'name_ar' => $service->name_ar,
+                    'name_en' => $service->name_en,
+                    'image' => $service->image,
+                ];
+            })->toArray();
+        }
 
         $hotel->update($validated);
 
@@ -219,5 +255,49 @@ class UserHotelController extends Controller
                 }),
             ],
         ]);
+    }
+
+    /**
+     * Clone a hotel.
+     */
+    public function clone(Hotel $hotel): JsonResponse
+    {
+        if ($hotel->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Clone Hotel
+        $newHotel = $hotel->replicate();
+        $newHotel->name_en .= ' (Copy)';
+        $newHotel->name_ar .= ' (نسخة)';
+        $newHotel->is_active = false; // Reset status
+        $newHotel->push();
+
+        // Clone Hotel Media
+        foreach ($hotel->media as $media) {
+            $newMedia = $media->replicate();
+            $newMedia->hotel_id = $newHotel->id;
+            $newMedia->push();
+        }
+
+        // Clone Rooms and Room Media
+        foreach ($hotel->rooms as $room) {
+            $newRoom = $room->replicate();
+            $newRoom->hotel_id = $newHotel->id;
+            $newRoom->push();
+
+            foreach ($room->media as $roomMedia) {
+                $newRoomMedia = $roomMedia->replicate();
+                $newRoomMedia->hotel_id = $newHotel->id;
+                $newRoomMedia->room_id = $newRoom->id;
+                $newRoomMedia->push();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hotel cloned successfully pending approval',
+            'data' => ['hotel_id' => $newHotel->id],
+        ], 201);
     }
 }

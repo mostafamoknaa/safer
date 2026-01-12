@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services/bus-request', [\App\Http\Controllers\Api\ServiceController::class, 'createBusRequest']);
     Route::post('/services/private-car-request', [\App\Http\Controllers\Api\ServiceController::class, 'createPrivateCarRequest']);
     Route::post('/services/reservation', [\App\Http\Controllers\Api\ServiceController::class, 'createReservation']);
+    Route::get('/services/master', [\App\Http\Controllers\Api\ServiceController::class, 'getMasterServices']);
     Route::get('/services/my-requests', [\App\Http\Controllers\Api\ServiceController::class, 'getUserRequests']);
 
     // Events routes
@@ -94,6 +95,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/hotels', [\App\Http\Controllers\Api\UserHotelController::class, 'store']);
     Route::get('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'show']);
     Route::post('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'update']);
+    Route::post('/user/hotels/{hotel}/clone', [\App\Http\Controllers\Api\UserHotelController::class, 'clone']);
+
+    // User Hotel Rooms
+    Route::post('/user/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'store']);
+    Route::post('/user/hotels/{hotel}/rooms/bulk-update', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'bulkUpdate']);
+    Route::post('/user/hotels/{hotel}/rooms/mass-update', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'massUpdate']);
+    Route::post('/user/rooms/{room}', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'update']);
+    Route::delete('/user/rooms/{room}', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'destroy']);
+    Route::post('/user/rooms/{room}/clone', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'clone']);
+
+    // User Buses
+    Route::apiResource('user/buses', \App\Http\Controllers\Api\UserBusController::class);
+    Route::post('/user/buses/{bus}/clone', [\App\Http\Controllers\Api\UserBusController::class, 'clone']);
+
+    // User Trips
+    Route::apiResource('user/trips', \App\Http\Controllers\Api\UserTripController::class);
+    Route::post('/user/trips/{trip}/clone', [\App\Http\Controllers\Api\UserTripController::class, 'clone']);
+
+    // User Cars
+    Route::apiResource('user/cars', \App\Http\Controllers\Api\UserCarController::class);
+    Route::post('/user/cars/{car}/clone', [\App\Http\Controllers\Api\UserCarController::class, 'clone']);
+
+    // User Events
+    Route::apiResource('user/events', \App\Http\Controllers\Api\UserEventController::class);
+    Route::post('/user/events/{event}/clone', [\App\Http\Controllers\Api\UserEventController::class, 'clone']);
 
     // Wallet routes
     Route::get('/wallet', [\App\Http\Controllers\Api\WalletController::class, 'getWallet']);
