@@ -15,7 +15,7 @@ class HotelController extends Controller
 {
     public function index(): View
     {
-        $hotels = Hotel::with('province')->orderByDesc('created_at')->paginate(12);
+        $hotels = Hotel::with(['province', 'user'])->orderByDesc('created_at')->paginate(12);
 
         return view('admin.hotels.index', compact('hotels'));
     }
@@ -46,6 +46,13 @@ class HotelController extends Controller
         $hotel->load('media');
 
         return view('admin.hotels.edit', compact('hotel', 'provinces'));
+    }
+
+    public function show(Hotel $hotel): View
+    {
+        $hotel->load(['media', 'user', 'province']);
+        
+        return view('admin.hotels.show', compact('hotel'));
     }
 
     public function update(Request $request, Hotel $hotel): RedirectResponse

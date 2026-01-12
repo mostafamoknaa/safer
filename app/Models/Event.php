@@ -22,13 +22,32 @@ class Event extends Model
         'price',
         'available_tickets',
         'is_active',
+        'user_id',
+        'activity_type',
+        'price_per_person',
+        'duration',
+        'phone',
+        'phone_secondary',
+        'max_participants',
+        'instant_booking',
+        'allow_cancellation',
+        'cancellation_hours',
+        'activity_images',
+        'id_images',
     ];
 
     protected $casts = [
         'event_date' => 'datetime',
         'price' => 'decimal:2',
+        'price_per_person' => 'decimal:2',
         'available_tickets' => 'integer',
+        'max_participants' => 'integer',
+        'cancellation_hours' => 'integer',
         'is_active' => 'boolean',
+        'instant_booking' => 'boolean',
+        'allow_cancellation' => 'boolean',
+        'activity_images' => 'array',
+        'id_images' => 'array',
     ];
 
     /**
@@ -74,10 +93,10 @@ class Event extends Model
     }
 
     /**
-     * Get localized description attribute.
+     * Get the user who created this event.
      */
-    public function getDescriptionAttribute(): ?string
+    public function user()
     {
-        return app()->getLocale() === 'ar' ? $this->description_ar : $this->description_en;
+        return $this->belongsTo(User::class);
     }
 }

@@ -1053,5 +1053,48 @@ return [
         'total_price' => 'Total Price',
         'view_location' => 'View Location',
     ],
+    'services' => [
+        'page_title' => 'Services Management',
+        'heading' => 'Services List',
+        'subheading' => 'Add or edit services and manage their names and images.',
+        'create_title' => 'Add Service',
+        'create_heading' => 'Create New Service',
+        'create_subheading' => 'Enter service details and upload an image.',
+        'edit_title' => 'Edit Service',
+        'edit_heading' => 'Update Service Details',
+        'edit_subheading' => 'Edit service details and manage the image.',
+        'actions' => [
+            'create' => 'Add Service',
+            'edit' => 'Edit',
+            'delete' => 'Delete',
+            'cancel' => 'Cancel',
+            'store' => 'Save Service',
+            'update' => 'Update Service',
+        ],
+        'badges' => [
+            'active' => 'Active',
+            'inactive' => 'Inactive',
+        ],
+        'table' => [
+            'name' => 'Name',
+            'image' => 'Image',
+            'status' => 'Status',
+            'actions' => 'Actions',
+        ],
+        'form' => [
+            'name_ar' => 'Service Name (Arabic)',
+            'name_en' => 'Service Name (English)',
+            'image' => 'Service Image',
+            'image_hint' => 'Upload a service image (recommended size 400x400)',
+            'is_active' => 'Show service in connected interfaces',
+        ],
+        'messages' => [
+            'created' => 'Service added successfully.',
+            'updated' => 'Service updated successfully.',
+            'deleted' => 'Service deleted.',
+        ],
+        'confirm_delete' => 'Are you sure you want to delete this service?',
+        'empty' => 'No services have been added yet.',
+    ],
 ];
 
