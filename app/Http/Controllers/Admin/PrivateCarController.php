@@ -39,9 +39,12 @@ class PrivateCarController extends Controller
         $validated = $request->validate([
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
+            'car_model' => 'required|string|max:255',
+            'price_per_day' => 'required|numeric|min:0|max:999999.99',
+            'price_per_hour' => 'required|numeric|min:0|max:999999.99',
             'seats_count' => 'required|integer|min:1|max:50',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'max_speed' => 'nullable|integer|min:0|max:500',
             'acceleration' => 'nullable|numeric|min:0|max:100',
             'power' => 'nullable|integer|min:0|max:2000',
@@ -50,11 +53,18 @@ class PrivateCarController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('private-cars', 'public');
-        }
+        $privateCar = PrivateCar::create($validated);
 
-        PrivateCar::create($validated);
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('private-cars', 'public');
+                \App\Models\PrivateCarMedia::create([
+                    'private_car_id' => $privateCar->id,
+                    'file_path' => $path,
+                    'order_column' => $index,
+                ]);
+            }
+        }
 
         return redirect()
             ->route('admin.private-cars.index')
@@ -77,9 +87,11 @@ class PrivateCarController extends Controller
         $validated = $request->validate([
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
+            'price_per_day' => 'required|numeric|min:0|max:999999.99',
+            'price_per_hour' => 'required|numeric|min:0|max:999999.99',
             'seats_count' => 'required|integer|min:1|max:50',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'max_speed' => 'nullable|integer|min:0|max:500',
             'acceleration' => 'nullable|numeric|min:0|max:100',
             'power' => 'nullable|integer|min:0|max:2000',
@@ -88,15 +100,18 @@ class PrivateCarController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($privateCar->image) {
-                Storage::disk('public')->delete($privateCar->image);
-            }
-            $validated['image'] = $request->file('image')->store('private-cars', 'public');
-        }
-
         $privateCar->update($validated);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('private-cars', 'public');
+                \App\Models\PrivateCarMedia::create([
+                    'private_car_id' => $privateCar->id,
+                    'file_path' => $path,
+                    'order_column' => $privateCar->media()->max('order_column') + 1 ?? 0,
+                ]);
+            }
+        }
 
         return redirect()
             ->route('admin.private-cars.index')

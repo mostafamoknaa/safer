@@ -15,7 +15,7 @@ class HotelController extends Controller
 {
     public function index(): View
     {
-        $hotels = Hotel::with('province')->orderByDesc('created_at')->paginate(12);
+        $hotels = Hotel::with(['province', 'user'])->orderByDesc('created_at')->paginate(12);
 
         return view('admin.hotels.index', compact('hotels'));
     }
@@ -46,6 +46,13 @@ class HotelController extends Controller
         $hotel->load('media');
 
         return view('admin.hotels.edit', compact('hotel', 'provinces'));
+    }
+
+    public function show(Hotel $hotel): View
+    {
+        $hotel->load(['media', 'user', 'province']);
+        
+        return view('admin.hotels.show', compact('hotel'));
     }
 
     public function update(Request $request, Hotel $hotel): RedirectResponse
@@ -87,10 +94,15 @@ class HotelController extends Controller
             'address_ar' => ['required', 'string'],
             'address_en' => ['required', 'string'],
             'province_id' => ['required', 'exists:provinces,id'],
+            'country' => ['nullable', 'string', 'max:255'],
             'type' => ['required', 'in:hotel,hostel,spa,hotel_apartment'],
             'website_url' => ['nullable', 'url', 'max:255'],
             'about_info_ar' => ['nullable', 'string'],
             'about_info_en' => ['nullable', 'string'],
+            'services' => ['nullable', 'array'],
+            'rate' => ['nullable', 'numeric', 'min:1', 'max:5'],
+            'lat' => ['nullable', 'numeric'],
+            'lang' => ['nullable', 'numeric'],
             'is_active' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
@@ -98,6 +110,7 @@ class HotelController extends Controller
             'videos.*' => ['file', 'mimes:mp4,avi,mov,wmv,flv', 'max:51200'],
         ]) + [
             'is_active' => $request->boolean('is_active'),
+            'rate' => $request->input('rate', 2.0),
         ];
     }
 

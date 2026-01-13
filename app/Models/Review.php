@@ -17,17 +17,15 @@ class Review extends Model
         'comment',
     ];
 
-    /**
-     * Get the user who wrote the review.
-     */
+    protected $casts = [
+        'rating' => 'integer',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the hotel that was reviewed.
-     */
     public function hotel(): BelongsTo
     {
         return $this->belongsTo(Hotel::class);

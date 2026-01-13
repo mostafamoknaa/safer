@@ -13,7 +13,11 @@ class HotelRoom extends Model
 
     protected $fillable = [
         'hotel_id',
+        'name',
+        'type',
         'price_per_night',
+        'cleaning_fee',
+        'service_fee',
         'beds_count',
         'bathrooms_count',
         'rooms_count',
@@ -21,12 +25,16 @@ class HotelRoom extends Model
         'checkin_time',
         'checkout_time',
         'blocked_slots',
+        'services',
     ];
 
     protected $casts = [
         'price_per_night' => 'decimal:2',
+        'cleaning_fee' => 'decimal:2',
+        'service_fee' => 'decimal:2',
         'is_active' => 'boolean',
         'blocked_slots' => 'array',
+        'services' => 'array',
     ];
 
     public function hotel(): BelongsTo

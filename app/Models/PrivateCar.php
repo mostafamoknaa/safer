@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
 
 class PrivateCar extends Model
 {
@@ -13,19 +14,22 @@ class PrivateCar extends Model
     protected $fillable = [
         'name_ar',
         'name_en',
-        'price',
+        'car_model',
+        'price_per_day',
+        'price_per_hour',
         'seats_count',
-        'image',
         'max_speed',
         'acceleration',
         'power',
         'notes_ar',
         'notes_en',
         'is_active',
+        'user_id',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price_per_day' => 'decimal:2',
+        'price_per_hour' => 'decimal:2',
         'seats_count' => 'integer',
         'max_speed' => 'integer',
         'acceleration' => 'decimal:2',
@@ -50,6 +54,14 @@ class PrivateCar extends Model
     }
 
     /**
+     * Get the user that owns the private car.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the localized notes attribute.
      */
     public function getNotesAttribute(): ?string
@@ -58,10 +70,10 @@ class PrivateCar extends Model
     }
 
     /**
-     * Get the image URL.
+     * Get media for this private car.
      */
-    public function getImageUrlAttribute(): ?string
+    public function media(): HasMany
     {
-        return $this->image ? asset('storage/' . $this->image) : null;
+        return $this->hasMany(PrivateCarMedia::class);
     }
 }
