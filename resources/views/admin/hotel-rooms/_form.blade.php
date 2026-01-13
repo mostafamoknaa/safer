@@ -106,21 +106,256 @@
     </div>
 
     @if($editing && $hotelRoom->media->count() > 0)
-        <div class="grid gap-4">
-            <label class="text-sm font-medium text-slate-600">الصور الحالية</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                @foreach($hotelRoom->media as $media)
-                    <div class="relative group">
-                        <img src="{{ Storage::url($media->file_path) }}" alt="Room Image" class="w-full h-32 object-cover rounded-lg">
-                        <label class="absolute top-2 right-2 flex items-center gap-1">
-                            <input type="checkbox" name="delete_media[]" value="{{ $media->id }}" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-                            <span class="text-xs text-white bg-rose-500 px-2 py-1 rounded">حذف</span>
-                        </label>
-                    </div>
+        <!-- Current Images ... -->
+    @endif
+
+    <!-- Room Services -->
+    <div class="grid gap-4">
+        <label class="text-sm font-medium text-slate-600">
+            {{ __('hotel.hotels.form.services') }}
+        </label>
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
+            <!-- Search and Add Service -->
+            <div class="mb-4 flex gap-3">
+                <input type="text" id="serviceSearch" placeholder="Search services..." 
+                       class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                <div class="flex gap-2">
+                    <input type="text" id="newService" placeholder="Add custom service" 
+                           class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                    <button type="button" id="addService" 
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+                        Add
+                    </button>
+                </div>
+            </div>
+            
+            <div id="servicesContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                @php
+                    $services = ['wifi', 'parking', 'pool', 'food', 'sports_center', 'elevator', 'social_rooms', 'opening', 'kitchen', 'cooking_basics', 'dishes_silverware', 'oven', 'hot_water_kettle', 'dining_table', 'fire_extinguisher', 'first_aid_kit', 'crib', 'air_condition', 'indoor_fireplace', 'heating', 'smoke_alarm', 'washer', 'hangers', 'bed_linens', 'iron', 'clothing_storage', 'tv', 'internet_connection', 'high_chair', 'portable_fan', 'freezer', 'stove', 'microwave', 'waterfront', 'fire_pit', 'free_parking', 'beach_access', 'shampoo', 'body_soap', 'shower_gel'];
+                    $roomServices = old('services', $hotelRoom->services ?? []);
+                @endphp
+                @foreach($services as $service)
+                    <label class="service-item flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all duration-200 group" data-service="{{ __('hotel.hotels.services.' . $service) }}">
+                        <input type="checkbox" name="services[]" value="{{ $service }}"
+                               class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-2"
+                               @checked(in_array($service, $roomServices))>
+                        <span class="text-sm text-slate-700 group-hover:text-indigo-700 font-medium">{{ __('hotel.hotels.services.' . $service) }}</span>
+                    </label>
                 @endforeach
             </div>
         </div>
-    @endif
+        @error('services')
+            <p class="text-xs text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <!-- Room Availability & Time Slots -->
+    <div class="grid gap-4">
+        <label class="text-sm font-medium text-slate-600">
+            {{ __('hotel.hotel_rooms.form.availability') ?? 'توفر الغرفة والفترات الزمنية' }}
+        </label>
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-200">
+            <!-- Default Operating Hours -->
+            <div class="mb-6">
+                <h4 class="text-sm font-medium text-slate-700 mb-3">{{ __('hotel.hotel_rooms.form.default_hours') ?? 'ساعات العمل الافتراضية' }}</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-600">{{ __('hotel.hotel_rooms.form.checkin_time') ?? 'وقت تسجيل الدخول' }}</label>
+                        <input type="time" name="checkin_time" value="{{ old('checkin_time', isset($hotelRoom) && $hotelRoom->checkin_time ? $hotelRoom->checkin_time : '14:00') }}"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-600">{{ __('hotel.hotel_rooms.form.checkout_time') ?? 'وقت تسجيل الخروج' }}</label>
+                        <input type="time" name="checkout_time" value="{{ old('checkout_time', isset($hotelRoom) && $hotelRoom->checkout_time ? $hotelRoom->checkout_time : '12:00') }}"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blocked Dates/Times -->
+            <div class="mb-4">
+                <h4 class="text-sm font-medium text-slate-700 mb-3">{{ __('hotel.hotel_rooms.form.blocked_slots') ?? 'حجب تواريخ/أوقات محددة' }}</h4>
+                <div id="blockedSlots" class="space-y-3">
+                    @php
+                        $blockedSlots = old('blocked_slots', isset($hotelRoom) && $hotelRoom->blocked_slots ? $hotelRoom->blocked_slots : []);
+                    @endphp
+                    @if(empty($blockedSlots))
+                        <div class="blocked-slot grid grid-cols-12 gap-3 items-end">
+                            <div class="col-span-3">
+                                <label class="text-xs text-slate-600">من تاريخ</label>
+                                <input type="date" name="blocked_slots[0][from_date]" 
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-xs text-slate-600">من وقت</label>
+                                <input type="time" name="blocked_slots[0][from_time]" 
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                            </div>
+                            <div class="col-span-3">
+                                <label class="text-xs text-slate-600">إلى تاريخ</label>
+                                <input type="date" name="blocked_slots[0][to_date]" 
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-xs text-slate-600">إلى وقت</label>
+                                <input type="time" name="blocked_slots[0][to_time]" 
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                            </div>
+                            <div class="col-span-2">
+                                <button type="button" onclick="removeBlockedSlot(this)" 
+                                        class="w-full px-3 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 text-sm">
+                                    حذف
+                                </button>
+                            </div>
+                        </div>
+                    @else
+                        @foreach($blockedSlots as $index => $slot)
+                            <div class="blocked-slot grid grid-cols-12 gap-3 items-end">
+                                <div class="col-span-3">
+                                    <label class="text-xs text-slate-600">من تاريخ</label>
+                                    <input type="date" name="blocked_slots[{{ $index }}][from_date]" value="{{ $slot['from_date'] ?? '' }}"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-xs text-slate-600">من وقت</label>
+                                    <input type="time" name="blocked_slots[{{ $index }}][from_time]" value="{{ $slot['from_time'] ?? '' }}"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                </div>
+                                <div class="col-span-3">
+                                    <label class="text-xs text-slate-600">إلى تاريخ</label>
+                                    <input type="date" name="blocked_slots[{{ $index }}][to_date]" value="{{ $slot['to_date'] ?? '' }}"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-xs text-slate-600">إلى وقت</label>
+                                    <input type="time" name="blocked_slots[{{ $index }}][to_time]" value="{{ $slot['to_time'] ?? '' }}"
+                                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                                </div>
+                                <div class="col-span-2">
+                                    <button type="button" onclick="removeBlockedSlot(this)" 
+                                            class="w-full px-3 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 text-sm">
+                                        حذف
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+                <button type="button" onclick="addBlockedSlot()" 
+                        class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+                    إضافة فترة محجوبة
+                </button>
+            </div>
+        </div>
+        @error('blocked_slots')
+            <p class="text-xs text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    @push('scripts')
+    <script>
+    let slotIndex = {{ count(old('blocked_slots', isset($hotelRoom) && $hotelRoom->blocked_slots ? $hotelRoom->blocked_slots : [])) }};
+    
+    function addBlockedSlot() {
+        const container = document.getElementById('blockedSlots');
+        const slotHtml = `
+            <div class="blocked-slot grid grid-cols-12 gap-3 items-end">
+                <div class="col-span-3">
+                    <label class="text-xs text-slate-600">من تاريخ</label>
+                    <input type="date" name="blocked_slots[${slotIndex}][from_date]" 
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-slate-600">من وقت</label>
+                    <input type="time" name="blocked_slots[${slotIndex}][from_time]" 
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div class="col-span-3">
+                    <label class="text-xs text-slate-600">إلى تاريخ</label>
+                    <input type="date" name="blocked_slots[${slotIndex}][to_date]" 
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-slate-600">إلى وقت</label>
+                    <input type="time" name="blocked_slots[${slotIndex}][to_time]" 
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div class="col-span-2">
+                    <button type="button" onclick="removeBlockedSlot(this)" 
+                            class="w-full px-3 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 text-sm">
+                        حذف
+                    </button>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', slotHtml);
+        slotIndex++;
+    }
+    
+    function removeBlockedSlot(button) {
+        button.closest('.blocked-slot').remove();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('serviceSearch');
+        const newServiceInput = document.getElementById('newService');
+        const addServiceBtn = document.getElementById('addService');
+        const servicesContainer = document.getElementById('servicesContainer');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const serviceItems = document.querySelectorAll('.service-item');
+                
+                serviceItems.forEach(item => {
+                    const serviceName = item.dataset.service.toLowerCase();
+                    if (serviceName.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        if (addServiceBtn) {
+            addServiceBtn.addEventListener('click', function() {
+                const serviceName = newServiceInput.value.trim();
+                if (serviceName) {
+                    const serviceValue = serviceName.toLowerCase().replace(/\s+/g, '_');
+                    
+                    const serviceItem = document.createElement('label');
+                    serviceItem.className = 'service-item flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all duration-200 group';
+                    serviceItem.dataset.service = serviceName;
+                    
+                    serviceItem.innerHTML = `
+                        <input type="checkbox" name="services[]" value="${serviceValue}"
+                               class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-2" checked>
+                        <span class="text-sm text-slate-700 group-hover:text-indigo-700 font-medium">${serviceName}</span>
+                        <button type="button" class="ml-auto text-rose-500 hover:text-rose-700" onclick="this.parentElement.remove()">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    `;
+                    
+                    servicesContainer.appendChild(serviceItem);
+                    newServiceInput.value = '';
+                }
+            });
+        }
+        
+        if (newServiceInput) {
+            newServiceInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addServiceBtn.click();
+                }
+            });
+        }
+    });
+    </script>
+    @endpush
 
     <div class="flex items-center gap-3">
         <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-600">

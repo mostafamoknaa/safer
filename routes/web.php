@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\HotelRoomController;
 use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\MasterServiceController;
 use Illuminate\Support\Facades\Route;
 
 // Public Website Routes
@@ -84,11 +85,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('faqs', FaqController::class)
             ->except('show');
 
-        Route::resource('hotels', HotelController::class)
-            ->except('show');
+        Route::resource('hotels', HotelController::class);
 
         Route::resource('hotel-rooms', HotelRoomController::class)
             ->except('show');
+        Route::post('hotel-rooms/{hotelRoom}/update', [HotelRoomController::class, 'update'])
+            ->name('hotel-rooms.update');
+        Route::post('hotel-rooms/{hotelRoom}/clone', [HotelRoomController::class, 'clone'])
+            ->name('hotel-rooms.clone');
 
         Route::resource('users', UserController::class)
             ->only(['index', 'destroy']);
@@ -127,11 +131,78 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Services routes
         Route::resource('buses', \App\Http\Controllers\Admin\BusController::class);
         Route::resource('trips', \App\Http\Controllers\Admin\TripController::class);
+        Route::resource('master-services', MasterServiceController::class)->except('show');
         Route::resource('private-cars', \App\Http\Controllers\Admin\PrivateCarController::class);
         Route::resource('service-requests', \App\Http\Controllers\Admin\ServiceRequestController::class)->except(['create', 'store']);
 
         // Events routes
         Route::resource('events', \App\Http\Controllers\Admin\EventController::class);
+
+        // Vouchers routes
+        Route::resource('vouchers', \App\Http\Controllers\Admin\VoucherController::class);
+
+        // Notifications routes
+        Route::resource('notifications', \App\Http\Controllers\Admin\NotificationController::class)
+            ->except(['edit', 'update']);
+
+        // Wallets routes
+        Route::get('wallets', [\App\Http\Controllers\Admin\WalletController::class, 'index'])
+            ->name('wallets.index');
+        Route::get('wallets/{wallet}', [\App\Http\Controllers\Admin\WalletController::class, 'show'])
+            ->name('wallets.show');
+        Route::get('wallet-transactions', [\App\Http\Controllers\Admin\WalletController::class, 'transactions'])
+            ->name('wallets.transactions');
+        Route::get('wallets/add-money/form', [\App\Http\Controllers\Admin\WalletController::class, 'addMoney'])
+            ->name('wallets.add-money');
+        Route::post('wallets/add-money', [\App\Http\Controllers\Admin\WalletController::class, 'storeMoney'])
+            ->name('wallets.store-money');
+
+        // Services routes (enhanced)
+        Route::get('services/buses', [\App\Http\Controllers\Admin\ServiceController::class, 'buses'])
+            ->name('services.buses');
+        Route::get('services/buses/create', [\App\Http\Controllers\Admin\ServiceController::class, 'createBus'])
+            ->name('services.buses.create');
+        Route::post('services/buses', [\App\Http\Controllers\Admin\ServiceController::class, 'storeBus'])
+            ->name('services.buses.store');
+        Route::get('services/buses/{bus}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'editBus'])
+            ->name('services.buses.edit');
+        Route::put('services/buses/{bus}', [\App\Http\Controllers\Admin\ServiceController::class, 'updateBus'])
+            ->name('services.buses.update');
+        Route::delete('services/buses/{bus}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroyBus'])
+            ->name('services.buses.destroy');
+
+        Route::get('services/trips', [\App\Http\Controllers\Admin\ServiceController::class, 'trips'])
+            ->name('services.trips');
+        Route::get('services/trips/create', [\App\Http\Controllers\Admin\ServiceController::class, 'createTrip'])
+            ->name('services.trips.create');
+        Route::post('services/trips', [\App\Http\Controllers\Admin\ServiceController::class, 'storeTrip'])
+            ->name('services.trips.store');
+        Route::get('services/trips/{trip}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'editTrip'])
+            ->name('services.trips.edit');
+        Route::put('services/trips/{trip}', [\App\Http\Controllers\Admin\ServiceController::class, 'updateTrip'])
+            ->name('services.trips.update');
+        Route::delete('services/trips/{trip}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroyTrip'])
+            ->name('services.trips.destroy');
+
+        Route::get('services/private-cars', [\App\Http\Controllers\Admin\ServiceController::class, 'privateCars'])
+            ->name('services.private-cars');
+        Route::get('services/private-cars/create', [\App\Http\Controllers\Admin\ServiceController::class, 'createPrivateCar'])
+            ->name('services.private-cars.create');
+        Route::post('services/private-cars', [\App\Http\Controllers\Admin\ServiceController::class, 'storePrivateCar'])
+            ->name('services.private-cars.store');
+        Route::get('services/private-cars/{privateCar}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'editPrivateCar'])
+            ->name('services.private-cars.edit');
+        Route::put('services/private-cars/{privateCar}', [\App\Http\Controllers\Admin\ServiceController::class, 'updatePrivateCar'])
+            ->name('services.private-cars.update');
+        Route::delete('services/private-cars/{privateCar}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroyPrivateCar'])
+            ->name('services.private-cars.destroy');
+
+        Route::get('services/requests', [\App\Http\Controllers\Admin\ServiceController::class, 'requests'])
+            ->name('services.requests');
+        Route::get('services/requests/{request}', [\App\Http\Controllers\Admin\ServiceController::class, 'showRequest'])
+            ->name('services.requests.show');
+        Route::patch('services/requests/{request}/status', [\App\Http\Controllers\Admin\ServiceController::class, 'updateRequestStatus'])
+            ->name('services.requests.update-status');
 
         // Reports
         Route::get('reports/bookings', [\App\Http\Controllers\Admin\ReportController::class, 'bookings'])
@@ -164,6 +235,10 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
 
         Route::resource('hotel-rooms', \App\Http\Controllers\Hotel\HotelRoomController::class)
             ->except('show');
+        Route::post('hotel-rooms/{hotelRoom}/update', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'update'])
+            ->name('hotel-rooms.update');
+        Route::post('hotel-rooms/{hotelRoom}/clone', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'clone'])
+            ->name('hotel-rooms.clone');
 
         Route::get('conversations', [\App\Http\Controllers\Hotel\ConversationController::class, 'index'])
             ->name('conversations.index');

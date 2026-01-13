@@ -22,6 +22,7 @@ class Trip extends Model
         'trip_time',
         'duration_minutes',
         'is_active',
+        'user_id',
     ];
 
     protected $casts = [
@@ -37,6 +38,14 @@ class Trip extends Model
     public function bus(): BelongsTo
     {
         return $this->belongsTo(Bus::class);
+    }
+
+    /**
+     * Get the user that owns the trip.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

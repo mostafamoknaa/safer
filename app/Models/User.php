@@ -101,5 +101,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(EventTicket::class);
     }
+
+    /**
+     * Get the full URL for the user's profile image.
+     */
+    public function getImageAttribute($value)
+    {
+        return $value ? asset('uploads/profile/' . $value) : null;
+    }
 }
 

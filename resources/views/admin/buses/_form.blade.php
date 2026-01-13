@@ -48,6 +48,24 @@
         </div>
 
         <div class="grid gap-2">
+            <label for="type" class="text-sm font-medium text-slate-600">
+                نوع الحافلة
+            </label>
+            <select id="type" name="type"
+                    class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    required>
+                <option value="">اختر نوع الحافلة</option>
+                <option value="big" @selected(old('type', $bus->type ?? '') === 'big')>كبيرة</option>
+                <option value="small" @selected(old('type', $bus->type ?? '') === 'small')>صغيرة</option>
+            </select>
+            @error('type')
+                <p class="text-xs text-rose-600">{{ $message }}</p>
+            @enderror
+        </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-2">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="is_active" value="1"
                        @checked(old('is_active', $bus->is_active ?? true))

@@ -18,7 +18,7 @@ class BookingController extends Controller
      */
     public function getUserBookings(Request $request): JsonResponse
     {
-        $query = Booking::with(['hotel', 'hotel.province', 'room'])
+        $query = Booking::with(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media'])
             ->where('user_id', Auth::id());
 
         // Filter by status
@@ -34,20 +34,44 @@ class BookingController extends Controller
         $bookings = $query->orderByDesc('created_at')
             ->get()
             ->map(function ($booking) {
+                $hotelImages = $booking->hotel && $booking->hotel->media ? 
+                    $booking->hotel->media->where('type', 'image')->map(function ($media) {
+                        return [
+                            'url' => $media->file_url,
+                            'order' => $media->order_column,
+                        ];
+                    })->sortBy('order')->take(3)->values() : [];
+
+                $roomImages = $booking->room && $booking->room->media ? 
+                    $booking->room->media->where('type', 'image')->map(function ($media) {
+                        return [
+                            'url' => $media->file_url,
+                            'order' => $media->order_column,
+                        ];
+                    })->sortBy('order')->values() : [];
+
                 return [
                     'id' => $booking->id,
                     'booking_reference' => $booking->booking_reference,
                     'hotel' => $booking->hotel ? [
                         'id' => $booking->hotel->id,
                         'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
+                        'images' => $hotelImages,
                         'province' => $booking->hotel->province ? [
                             'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                         ] : null,
                     ] : null,
                     'room' => $booking->room ? [
                         'id' => $booking->room->id,
+                        'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
+                        'type' => $booking->room->type ?? 'standard',
                         'price_per_night' => (float) $booking->room->price_per_night,
+                        'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
+                        'service_fee' => (float) ($booking->room->service_fee ?? 0),
                         'beds_count' => $booking->room->beds_count,
+                        'bathrooms_count' => $booking->room->bathrooms_count,
+                        'rooms_count' => $booking->room->rooms_count,
+                        'images' => $roomImages,
                     ] : null,
                     'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                     'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
@@ -81,11 +105,21 @@ class BookingController extends Controller
             ], 403);
         }
 
-        $booking->load(['hotel', 'hotel.province', 'room', 'room.media', 'payments']);
+        $booking->load(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media', 'payments']);
 
         $roomImages = $booking->room && $booking->room->media ? $booking->room->media->where('type', 'image')->map(function ($media) {
-            return $media->file_url;
-        })->values() : [];
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values() : [];
+
+        $hotelImages = $booking->hotel && $booking->hotel->media ? $booking->hotel->media->where('type', 'image')->map(function ($media) {
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values() : [];
 
         $payments = $booking->payments->map(function ($payment) {
             return [
@@ -108,14 +142,20 @@ class BookingController extends Controller
                     'id' => $booking->hotel->id,
                     'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
                     'address' => app()->getLocale() === 'ar' ? $booking->hotel->address_ar : $booking->hotel->address_en,
+                    'images' => $hotelImages,
                     'province' => $booking->hotel->province ? [
+                        'id' => $booking->hotel->province->id,
                         'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                     ] : null,
                     'website_url' => $booking->hotel->website_url,
                 ] : null,
                 'room' => $booking->room ? [
                     'id' => $booking->room->id,
+                    'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
+                    'type' => $booking->room->type ?? 'standard',
                     'price_per_night' => (float) $booking->room->price_per_night,
+                    'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
+                    'service_fee' => (float) ($booking->room->service_fee ?? 0),
                     'beds_count' => $booking->room->beds_count,
                     'bathrooms_count' => $booking->room->bathrooms_count,
                     'rooms_count' => $booking->room->rooms_count,
@@ -151,6 +191,7 @@ class BookingController extends Controller
                 'check_out_date' => 'required|date|after:check_in_date',
                 'guests_count' => 'required|integer|min:1|max:100',
                 'rooms_count' => 'required|integer|min:1|max:50',
+                'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
             ]);
 
@@ -215,6 +256,44 @@ class BookingController extends Controller
             // Calculate nights and total price
             $nights = max(1, \Carbon\Carbon::parse($validated['check_in_date'])->diffInDays($validated['check_out_date']));
             $totalPrice = $pricePerNight * $nights * $validated['rooms_count'];
+            
+            // Handle voucher if provided
+            $voucher = null;
+            $discountAmount = 0;
+            $finalPrice = $totalPrice;
+            
+            if (!empty($validated['voucher_code'])) {
+                $voucher = \App\Models\Voucher::where('code', $validated['voucher_code'])->first();
+                
+                if (!$voucher) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'كود الخصم غير موجود',
+                    ], 400);
+                }
+                
+                if (!$voucher->isValid()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'كود الخصم غير صالح أو منتهي الصلاحية',
+                    ], 400);
+                }
+                
+                // Check if user already used this voucher
+                $userVoucherUsed = \App\Models\UserVoucher::where('user_id', Auth::id())
+                    ->where('voucher_id', $voucher->id)
+                    ->exists();
+                    
+                if ($userVoucherUsed) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'تم استخدام هذا الكود من قبل',
+                    ], 400);
+                }
+                
+                $discountAmount = $voucher->calculateDiscount($totalPrice);
+                $finalPrice = $totalPrice - $discountAmount;
+            }
 
             // Create booking
             $booking = Booking::create([
@@ -226,10 +305,23 @@ class BookingController extends Controller
                 'guests_count' => $validated['guests_count'],
                 'rooms_count' => $validated['rooms_count'],
                 'price_per_night' => $pricePerNight,
-                'total_price' => $totalPrice,
+                'total_price' => $finalPrice,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
             ]);
+            
+            // Record voucher usage if applied
+            if ($voucher && $discountAmount > 0) {
+                \App\Models\UserVoucher::create([
+                    'user_id' => Auth::id(),
+                    'voucher_id' => $voucher->id,
+                    'booking_id' => $booking->id,
+                    'discount_amount' => $discountAmount,
+                    'used_at' => now(),
+                ]);
+                
+                $voucher->increment('used_count');
+            }
 
             return response()->json([
                 'success' => true,
@@ -237,8 +329,11 @@ class BookingController extends Controller
                 'data' => [
                     'id' => $booking->id,
                     'booking_reference' => $booking->booking_reference,
-                    'total_price' => $totalPrice,
+                    'original_price' => $totalPrice,
+                    'discount_amount' => $discountAmount,
+                    'final_price' => $finalPrice,
                     'nights' => $nights,
+                    'voucher_applied' => $voucher ? $voucher->code : null,
                 ],
             ], 201);
 
