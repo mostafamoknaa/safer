@@ -75,4 +75,12 @@ class Hotel extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    /**
+     * Get reviews for this hotel.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class)->latest();
+    }
 }

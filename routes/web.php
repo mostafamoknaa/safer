@@ -11,14 +11,56 @@ use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+// Public Website Routes
+Route::get('/', [\App\Http\Controllers\Web\HomeController::class, 'index'])->name('web.home');
+
+// Public Hotels Routes
+Route::get('/hotels', [\App\Http\Controllers\Web\HotelController::class, 'index'])->name('web.hotels.index');
+Route::get('/hotels/{hotel}', [\App\Http\Controllers\Web\HotelController::class, 'show'])->name('web.hotels.show');
+Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Web\HotelController::class, 'rooms'])->name('web.hotels.rooms');
+
+// Public Events Routes
+Route::get('/events', [\App\Http\Controllers\Web\EventController::class, 'index'])->name('web.events.index');
+Route::get('/events/{event}', [\App\Http\Controllers\Web\EventController::class, 'show'])->name('web.events.show');
+
+// Public Services Routes
+Route::get('/services/buses', [\App\Http\Controllers\Web\ServiceController::class, 'buses'])->name('web.services.buses');
+Route::get('/services/trips', [\App\Http\Controllers\Web\ServiceController::class, 'trips'])->name('web.services.trips');
+Route::get('/services/trips/{trip}', [\App\Http\Controllers\Web\ServiceController::class, 'showTrip'])->name('web.services.trips.show');
+Route::get('/services/private-cars', [\App\Http\Controllers\Web\ServiceController::class, 'privateCars'])->name('web.services.private-cars');
+
+// Protected Routes (Require Authentication)
+Route::middleware(['auth'])->group(function () {
+    // Bookings
+    Route::get('/my-bookings', [\App\Http\Controllers\Web\BookingController::class, 'index'])->name('web.bookings.index');
+    Route::get('/bookings/create', [\App\Http\Controllers\Web\BookingController::class, 'create'])->name('web.bookings.create');
+    Route::post('/bookings', [\App\Http\Controllers\Web\BookingController::class, 'store'])->name('web.bookings.store');
+    Route::get('/bookings/{booking}', [\App\Http\Controllers\Web\BookingController::class, 'show'])->name('web.bookings.show');
+    Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Web\BookingController::class, 'cancel'])->name('web.bookings.cancel');
+
+    // Conversations
+    Route::get('/conversation', [\App\Http\Controllers\Web\ConversationController::class, 'index'])->name('web.conversations.index');
+    Route::post('/conversation/message', [\App\Http\Controllers\Web\ConversationController::class, 'sendMessage'])->name('web.conversations.send-message');
+
+    // Events - Purchase Tickets
+    Route::post('/events/purchase', [\App\Http\Controllers\Web\EventController::class, 'purchaseTickets'])->name('web.events.purchase');
+    Route::get('/my-tickets', [\App\Http\Controllers\Web\EventController::class, 'myTickets'])->name('web.events.my-tickets');
+
+    // Services - Requests
+    Route::post('/services/bus-request', [\App\Http\Controllers\Web\ServiceController::class, 'createBusRequest'])->name('web.services.bus-request');
+    Route::post('/services/private-car-request', [\App\Http\Controllers\Web\ServiceController::class, 'createPrivateCarRequest'])->name('web.services.private-car-request');
+    Route::get('/my-service-requests', [\App\Http\Controllers\Web\ServiceController::class, 'myRequests'])->name('web.services.my-requests');
 });
 
-// Default login route (redirects to admin login)
-Route::get('/login', function () {
-    return redirect()->route('admin.login');
-})->name('login');
+// Web Authentication Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\Web\AuthWebController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Web\AuthWebController::class, 'login']);
+    Route::get('/register', [\App\Http\Controllers\Web\AuthWebController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Web\AuthWebController::class, 'register']);
+});
+
+Route::post('/logout', [\App\Http\Controllers\Web\AuthWebController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
