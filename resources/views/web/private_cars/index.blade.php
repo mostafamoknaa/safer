@@ -4,30 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سافر | حجوزاتي</title>
+    <title>سافر | السيارات الخاصة</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: Cairo, sans-serif;
         }
-
-        .booking-card {
-            transition: all 0.3s ease;
-            border-radius: 24px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .booking-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        }
     </style>
 </head>
 
-<body class="bg-[#F8F9FB]">
+<body class="bg-white">
     <!-- Navbar -->
     <nav
         class="bg-white px-8 py-4 shadow-sm flex items-center justify-between sticky top-0 z-50 border-b border-gray-100">
@@ -46,11 +34,14 @@
                     <span>الخدمات</span>
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
-                <div class="absolute top-full right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 text-right">
-                    <a href="{{ route('web.hotels.index') }}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-t-xl">
+                <div
+                    class="absolute top-full right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 text-right">
+                    <a href="{{ route('web.hotels.index') }}"
+                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-t-xl">
                         حجز فنادق
                     </a>
-                    <a href="{{ route('web.private_cars.index') }}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-b-xl">
+                    <a href="{{ route('web.private_cars.index') }}"
+                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-b-xl">
                         حجز سيارات خاصة
                     </a>
                 </div>
@@ -75,8 +66,9 @@
                     </button>
                     <!-- Dropdown Menu -->
                     <div
-                       class="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl py-3 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-[100] text-right">
-                        <a href="{{ route('web.profile.edit') }}" class="flex items-center justify-end gap-3 px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition">
+                        class="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl py-3 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-[100] text-right">
+                        <a href="{{ route('web.profile.edit') }}"
+                            class="flex items-center justify-end gap-3 px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition">
                             <span>الملف الشخصي</span>
                             <i class="fa-solid fa-user-pen text-sm"></i>
                         </a>
@@ -110,66 +102,79 @@
     </nav>
 
     <!-- Content -->
-    <main class="py-12 px-4 md:px-8 max-w-5xl mx-auto min-h-screen">
-        <h1 class="text-4xl font-bold text-gray-900 mb-12 text-right">حجوزاتي</h1>
+    <main class="py-12 px-4 md:px-8 max-w-7xl mx-auto min-h-screen">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-12 text-right">السيارات الخاصة</h1>
 
-        @if($bookings->isEmpty())
-            <div class="text-center py-20 bg-white rounded-[40px] shadow-sm">
-                <i class="fa-solid fa-calendar-xmark text-6xl text-gray-200 mb-4"></i>
-                <p class="text-gray-500 text-xl font-semibold">لا يوجد لديك حجوزات حالياً</p>
-                <a href="{{ route('web.home') }}"
-                    class="inline-block mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 transition">ابدأ
-                    الحجز الآن</a>
-            </div>
-        @else
-            <div class="space-y-6">
-                @foreach($bookings as $booking)
-                    @php $hotel = $booking->room->hotel; @endphp
-                    <div class="booking-card p-4 flex flex-col md:flex-row gap-6 shadow-sm border border-gray-50">
-                        <div class="w-full md:w-64 h-44 flex-shrink-0">
-                            <img src="{{ $hotel->media->first() ? $hotel->media->first()->file_url : 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600' }}"
-                                alt="{{ $hotel->name_ar }}" class="w-full h-full object-cover rounded-2xl">
-                        </div>
-                        <div class="flex-1 flex flex-col justify-between py-2 text-right">
-                            <div>
-                                <div class="flex flex-wrap items-center justify-end gap-3 mb-4">
-                                    <span
-                                        class="bg-blue-100 text-blue-600 px-4 py-1.5 rounded-xl font-bold text-sm">الإقامات</span>
-                                    <div class="flex gap-1 text-yellow-400">
-                                        @for($i = 0; $i < 5; $i++)
-                                            <i
-                                                class="fa-solid fa-star text-xs {{ $i < round($hotel->rate ?? 5) ? '' : 'opacity-20' }}"></i>
-                                        @endfor
-                                    </div>
-                                    <span class="text-gray-400 text-xs">(584 تعليق)</span>
-                                </div>
-                                <h3 class="text-2xl font-bold text-gray-900 mb-3">{{ $hotel->name_ar }}</h3>
-                                <div class="flex items-center justify-end gap-6 text-gray-500 text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ \Carbon\Carbon::parse($booking->check_in_date)->translatedFormat('d F Y') }}</span>
-                                        <i class="fa-solid fa-calendar-days"></i>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ $hotel->province ? $hotel->province->name_ar : 'القاهرة' }}</span>
-                                        <i class="fa-solid fa-location-dot"></i>
-                                    </div>
+        <div class="grid grid-cols-1 gap-6">
+            @foreach($cars as $car)
+                <div
+                    class="bg-white rounded-[20px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col md:flex-row h-auto md:h-64 border border-gray-100/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+
+                    <!-- Image Side (Right) -->
+                    <div class="w-full md:w-[320px] h-48 md:h-full relative overflow-hidden order-1 md:order-2">
+                        <img src="{{ $car->media->first() ? $car->media->first()->file_url : 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800' }}"
+                            alt="{{ $car->name_ar }}" class="w-full h-full object-cover">
+                    </div>
+
+                    <!-- Details Side (Left) -->
+                    <div class="flex-1 p-6 flex flex-col justify-between order-2 md:order-1 text-right">
+                        <div>
+                            <!-- Rating -->
+                            <div class="flex items-center justify-end gap-2 mb-2">
+                                <span class="text-gray-400 text-xs font-medium">(48 تعليق)</span>
+                                <div class="flex gap-0.5 text-xs text-orange-400">
+                                    <i class="fa-solid fa-star"></i>
+                                    <i class="fa-solid fa-star"></i>
+                                    <i class="fa-solid fa-star"></i>
+                                    <i class="fa-solid fa-star"></i>
+                                    <i class="fa-solid fa-star"></i>
                                 </div>
                             </div>
-                            <div class="mt-6 md:mt-0 flex items-center justify-between md:justify-end md:gap-8">
-                                <div class="text-right">
-                                    <p class="text-blue-600 font-bold text-2xl">{{ number_format($booking->total_price) }} جنيه
-                                        / ليلة</p>
+
+                            <!-- Title -->
+                            <h2 class="text-2xl font-black text-gray-800 mb-6">{{ $car->name_ar }}</h2>
+                        </div>
+
+                        <!-- Bottom Section -->
+                        <div class="flex items-end justify-between">
+                            <!-- Left: Price & Buttons -->
+                            <div class="flex flex-col gap-3 items-start">
+                                <p class="text-blue-600 font-bold text-xl dir-ltr tracking-tight">
+                                    {{ number_format($car->price_per_day) }} جنيه / اليوم
+                                </p>
+                                <div class="flex gap-3">
+                                    <a href="{{ route('web.private_cars.show', $car) }}"
+                                        class="px-8 py-2 rounded-full border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition">
+                                        التفاصيل
+                                    </a>
+                                    <button
+                                        class="px-8 py-2 rounded-full bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition shadow-md shadow-blue-200/50">
+                                        احجز الان
+                                    </button>
                                 </div>
+                            </div>
+
+                            <!-- Right: Specs (Year, Fuel, Transmission) -->
+                            <div class="flex gap-3 text-xs text-gray-500 font-bold">
+                                @if($car->transmission)
+                                    <span>{{ $car->transmission == 'automatic' ? 'أوتوماتيك' : $car->transmission }}</span>
+                                    <span class="text-gray-300">|</span>
+                                @endif
+                                @if($car->fuel_type)
+                                    <span>{{ $car->fuel_type == 'petrol' ? 'بنزين' : $car->fuel_type }}</span>
+                                    <span class="text-gray-300">|</span>
+                                @endif
+                                <span>{{ $car->car_model }}</span>
                             </div>
                         </div>
                     </div>
-                @endforeach
-            </div>
+                </div>
+            @endforeach
+        </div>
 
-            <div class="mt-12 flex justify-center">
-                {{ $bookings->links() }}
-            </div>
-        @endif
+        <div class="mt-16 flex justify-center">
+            {{ $cars->links() }}
+        </div>
     </main>
 
     <!-- Footer -->
@@ -179,7 +184,8 @@
                 <div class="flex items-center justify-start gap-2 mb-6">
                     <img src="{{ asset('9f0a5356f37b3a4ffa50fe9cf73267fbc8015c0d.png') }}" class="w-20 h-20 bg-white">
                 </div>
-                <p class="text-gray-400 text-sm mb-8">موقع سياحي متكامل يساعدك على التخطيط لرحلتك بسهولة...</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-8">موقع سياحي متكامل يساعدك على التخطيط لرحلتك
+                    بسهولة...</p>
                 <div class="flex justify-end gap-3">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
                         class="w-32">
@@ -209,6 +215,9 @@
                 </ul>
             </div>
             <div></div>
+        </div>
+        <div class="max-w-7xl mx-auto mt-16 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
+            <p>© 2025 سافر. جميع الحقوق محفوظة.</p>
         </div>
     </footer>
 </body>

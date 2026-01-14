@@ -15,30 +15,32 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Event::where('is_active', true);
+        $query = \App\Models\Trip::where('is_active', true);
 
         // Filter by upcoming or past
         if ($request->filled('filter')) {
             if ($request->filter === 'upcoming') {
-                $query->where('event_date', '>=', now());
+                $query->where('trip_date', '>=', now());
             } elseif ($request->filter === 'past') {
-                $query->where('event_date', '<', now());
+                $query->where('trip_date', '<', now());
             }
         } else {
-            // Default: show upcoming events
-            $query->where('event_date', '>=', now());
+            // Default: show upcoming trips
+            $query->where('trip_date', '>=', now());
         }
 
-        // Search by name
+        // Search by location
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name_ar', 'like', "%{$search}%")
-                    ->orWhere('name_en', 'like', "%{$search}%");
+                $q->where('departure_location_ar', 'like', "%{$search}%")
+                    ->orWhere('departure_location_en', 'like', "%{$search}%")
+                    ->orWhere('arrival_location_ar', 'like', "%{$search}%")
+                    ->orWhere('arrival_location_en', 'like', "%{$search}%");
             });
         }
 
-        $events = $query->orderBy('event_date', 'asc')->paginate(12);
+        $events = $query->orderBy('trip_date', 'asc')->paginate(12);
 
         return view('web.events.index', compact('events'));
     }

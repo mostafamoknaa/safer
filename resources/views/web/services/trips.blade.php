@@ -15,13 +15,14 @@
                         <input type="date" name="date" value="{{ request('date') }}"
                             class="w-full border rounded-lg px-4 py-2">
                     </div>
+                    <!--
                     <div>
                         <label class="block text-gray-700 mb-2">المحافظة</label>
                         <select name="province_id" class="w-full border rounded-lg px-4 py-2">
                             <option value="">الكل</option>
-                            <!-- Add provinces here if needed -->
                         </select>
                     </div>
+                    -->
                     <div class="flex items-end">
                         <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
                             بحث
@@ -42,23 +43,23 @@
                             </h3>
                             <p class="text-gray-600 mb-2">
                                 📍 الوجهة:
-                                {{ $trip->province ? (app()->getLocale() == 'ar' ? $trip->province->name_ar : $trip->province->name_en) : '' }}
+                                {{ app()->getLocale() == 'ar' ? $trip->arrival_location_ar : $trip->arrival_location_en }}
                             </p>
                             <p class="text-gray-600 mb-2">
-                                🕐 وقت المغادرة: {{ \Carbon\Carbon::parse($trip->departure_time)->format('Y-m-d H:i') }}
+                                🕐 وقت المغادرة: {{ $trip->trip_date->format('Y-m-d') }} {{ \Carbon\Carbon::parse($trip->trip_time)->format('h:i A') }}
                             </p>
                             <p class="text-gray-600 mb-2">
-                                👥 المقاعد المتاحة: {{ $trip->available_seats }}
+                                👥 المقاعد المتاحة: {{ $trip->available_seats_count }}
                             </p>
                         </div>
                         <div class="text-left mr-4">
                             <p class="text-2xl font-bold text-blue-600 mb-2">
-                                {{ number_format($trip->price_per_seat) }} ريال
+                                {{ number_format($trip->price) }} ج.م
                             </p>
                             <p class="text-sm text-gray-500 mb-3">للمقعد الواحد</p>
 
                             @auth
-                                @if($trip->available_seats > 0)
+                                @if($trip->available_seats_count > 0)
                                     <a href="{{ route('web.services.trips.show', $trip) }}"
                                         class="block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition text-center">
                                         احجز الآن
