@@ -17,8 +17,27 @@ class UserCarController extends Controller
     public function index(): JsonResponse
     {
         $cars = PrivateCar::where('user_id', Auth::id())
+            ->with('media')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($car) {
+                return [
+                    'id' => $car->id,
+                    'name_ar' => $car->name_ar,
+                    'name_en' => $car->name_en,
+                    'car_model' => $car->car_model,
+                    'price_per_day' => (float) $car->price_per_day,
+                    'price_per_hour' => (float) $car->price_per_hour,
+                    'seats_count' => $car->seats_count,
+                    'max_speed' => $car->max_speed,
+                    'acceleration' => $car->acceleration ? (float) $car->acceleration : null,
+                    'power' => $car->power,
+                    'notes_ar' => $car->notes_ar,
+                    'notes_en' => $car->notes_en,
+                    'is_active' => $car->is_active,
+                    'images' => $car->media->map(fn($media) => asset('storage/' . $media->file_path)),
+                ];
+            });
 
         return response()->json([
             'success' => true,
@@ -43,6 +62,8 @@ class UserCarController extends Controller
             'power' => 'required|integer|min:0',
             'notes_ar' => 'nullable|string',
             'notes_en' => 'nullable|string',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
 
         $validated['user_id'] = Auth::id();
@@ -50,10 +71,22 @@ class UserCarController extends Controller
 
         $car = PrivateCar::create($validated);
 
+        // Handle images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $image) {
+                $path = $image->store('private-cars', 'public');
+                PrivateCarMedia::create([
+                    'private_car_id' => $car->id,
+                    'file_path' => $path,
+                    'order_column' => $index,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Car added successfully',
-            'data' => $car,
+            'data' => $car->load('media'),
         ], 201);
     }
 
@@ -79,14 +112,29 @@ class UserCarController extends Controller
             'notes_ar' => 'nullable|string',
             'notes_en' => 'nullable|string',
             'is_active' => 'boolean',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
 
         $car->update($validated);
 
+        // Handle new images
+        if ($request->hasFile('images')) {
+            $orderColumn = $car->media()->max('order_column') ?? -1;
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('private-cars', 'public');
+                PrivateCarMedia::create([
+                    'private_car_id' => $car->id,
+                    'file_path' => $path,
+                    'order_column' => ++$orderColumn,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Car updated successfully',
-            'data' => $car,
+            'data' => $car->load('media'),
         ]);
     }
 

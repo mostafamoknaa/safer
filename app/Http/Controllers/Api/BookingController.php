@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingRoom;
 use App\Models\Hotel;
 use App\Models\HotelRoom;
 use Illuminate\Http\JsonResponse;
@@ -186,11 +187,11 @@ class BookingController extends Controller
         try {
             $validated = $request->validate([
                 'hotel_id' => 'required|exists:hotels,id',
-                'room_id' => 'nullable|exists:hotel_rooms,id',
+                'room_ids' => 'required|array|min:1',
+                'room_ids.*' => 'required|exists:hotel_rooms,id',
                 'check_in_date' => 'required|date|after_or_equal:today',
                 'check_out_date' => 'required|date|after:check_in_date',
                 'guests_count' => 'required|integer|min:1|max:100',
-                'rooms_count' => 'required|integer|min:1|max:50',
                 'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
             ]);
@@ -204,60 +205,47 @@ class BookingController extends Controller
                 ], 400);
             }
 
-            // If room_id is provided, validate it belongs to the hotel
-            $room = null;
-            $pricePerNight = null;
+            // Validate all rooms belong to hotel and are active
+            $rooms = HotelRoom::whereIn('id', $validated['room_ids'])
+                ->where('hotel_id', $hotel->id)
+                ->where('is_active', true)
+                ->get();
 
-            if ($validated['room_id']) {
-                $room = HotelRoom::where('id', $validated['room_id'])
-                    ->where('hotel_id', $hotel->id)
-                    ->where('is_active', true)
-                    ->first();
+            if ($rooms->count() !== count($validated['room_ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('api.hotels.room_not_available'),
+                ], 400);
+            }
 
-                if (!$room) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => __('api.hotels.room_not_available'),
-                    ], 400);
-                }
-
-                $pricePerNight = $room->price_per_night;
-
-                // Check room availability
-                $conflictingBookings = Booking::where('room_id', $room->id)
-                    ->where(function ($q) use ($validated) {
-                        $q->whereBetween('check_in_date', [$validated['check_in_date'], $validated['check_out_date']])
-                            ->orWhereBetween('check_out_date', [$validated['check_in_date'], $validated['check_out_date']])
-                            ->orWhere(function ($query) use ($validated) {
-                                $query->where('check_in_date', '<=', $validated['check_in_date'])
-                                    ->where('check_out_date', '>=', $validated['check_out_date']);
-                            });
+            // Check availability for each room
+            foreach ($rooms as $room) {
+                $conflict = BookingRoom::where('room_id', $room->id)
+                    ->whereHas('booking', function($q) use ($validated) {
+                        $q->where(function ($query) use ($validated) {
+                            $query->whereBetween('check_in_date', [$validated['check_in_date'], $validated['check_out_date']])
+                                ->orWhereBetween('check_out_date', [$validated['check_in_date'], $validated['check_out_date']])
+                                ->orWhere(function ($q) use ($validated) {
+                                    $q->where('check_in_date', '<=', $validated['check_in_date'])
+                                        ->where('check_out_date', '>=', $validated['check_out_date']);
+                                });
+                        })->whereIn('status', ['pending', 'confirmed', 'checked_in']);
                     })
-                    ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
                     ->exists();
 
-                if ($conflictingBookings) {
+                if ($conflict) {
                     return response()->json([
                         'success' => false,
-                        'message' => __('api.bookings.room_not_available_dates'),
-                    ], 400);
-                }
-            } else {
-                // If no room specified, use the minimum price from hotel rooms
-                $pricePerNight = $hotel->rooms()->where('is_active', true)->min('price_per_night');
-                if (!$pricePerNight) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => __('api.hotels.no_rooms_available'),
+                        'message' => __('api.bookings.room_not_available_dates') . ' (Room ID: ' . $room->id . ')',
                     ], 400);
                 }
             }
 
-            // Calculate nights and total price
+            // Calculate total price
             $nights = max(1, \Carbon\Carbon::parse($validated['check_in_date'])->diffInDays($validated['check_out_date']));
-            $totalPrice = $pricePerNight * $nights * $validated['rooms_count'];
+            $totalPrice = $rooms->sum('price_per_night') * $nights;
             
-            // Handle voucher if provided
+            // Handle voucher
             $voucher = null;
             $discountAmount = 0;
             $finalPrice = $totalPrice;
@@ -265,26 +253,14 @@ class BookingController extends Controller
             if (!empty($validated['voucher_code'])) {
                 $voucher = \App\Models\Voucher::where('code', $validated['voucher_code'])->first();
                 
-                if (!$voucher) {
+                if (!$voucher || !$voucher->isValid()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'كود الخصم غير موجود',
+                        'message' => 'كود الخصم غير صالح',
                     ], 400);
                 }
                 
-                if (!$voucher->isValid()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'كود الخصم غير صالح أو منتهي الصلاحية',
-                    ], 400);
-                }
-                
-                // Check if user already used this voucher
-                $userVoucherUsed = \App\Models\UserVoucher::where('user_id', Auth::id())
-                    ->where('voucher_id', $voucher->id)
-                    ->exists();
-                    
-                if ($userVoucherUsed) {
+                if (\App\Models\UserVoucher::where('user_id', Auth::id())->where('voucher_id', $voucher->id)->exists()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'تم استخدام هذا الكود من قبل',
@@ -299,18 +275,25 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'hotel_id' => $hotel->id,
-                'room_id' => $validated['room_id'] ?? null,
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
                 'guests_count' => $validated['guests_count'],
-                'rooms_count' => $validated['rooms_count'],
-                'price_per_night' => $pricePerNight,
+                'rooms_count' => count($validated['room_ids']),
+                'price_per_night' => $rooms->sum('price_per_night'),
                 'total_price' => $finalPrice,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
             ]);
             
-            // Record voucher usage if applied
+            // Link rooms to booking
+            foreach ($validated['room_ids'] as $roomId) {
+                BookingRoom::create([
+                    'booking_id' => $booking->id,
+                    'room_id' => $roomId,
+                ]);
+            }
+            
+            // Record voucher usage
             if ($voucher && $discountAmount > 0) {
                 \App\Models\UserVoucher::create([
                     'user_id' => Auth::id(),
@@ -333,7 +316,7 @@ class BookingController extends Controller
                     'discount_amount' => $discountAmount,
                     'final_price' => $finalPrice,
                     'nights' => $nights,
-                    'voucher_applied' => $voucher ? $voucher->code : null,
+                    'rooms_booked' => count($validated['room_ids']),
                 ],
             ], 201);
 

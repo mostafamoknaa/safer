@@ -71,6 +71,14 @@ class Booking extends Model
     }
 
     /**
+     * Get booked rooms for this booking.
+     */
+    public function bookedRooms(): HasMany
+    {
+        return $this->hasMany(BookingRoom::class);
+    }
+
+    /**
      * Get total paid amount.
      */
     public function getTotalPaidAttribute(): float
