@@ -23,22 +23,33 @@ class UserHotelController extends Controller
             ->map(function ($hotel) {
                 return [
                     'id' => $hotel->id,
-                    'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
+                    'name_ar' => $hotel->name_ar,
+                    'name_en' => $hotel->name_en,
                     'type' => $hotel->type,
                     'price' => (float) $hotel->price,
-                    'location' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                    'address_ar' => $hotel->address_ar,
+                    'address_en' => $hotel->address_en,
                     'phone' => $hotel->phone,
                     'phone_2' => $hotel->phone_2,
-                    'description' => app()->getLocale() === 'ar' ? $hotel->description_ar : $hotel->description_en,
+                    'description_ar' => $hotel->description_ar,
+                    'description_en' => $hotel->description_en,
+                    'lat' => $hotel->lat,
+                    'lang' => $hotel->lang,
+                    'country' => $hotel->country,
+                    'website_url' => $hotel->website_url,
+                    'province' => $hotel->province,
+                    'services' => $hotel->services,
                     'is_active' => $hotel->is_active,
                     'schedule_type' => $hotel->schedule_type,
                     'hourly_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
                     'booking_settings' => $hotel->booking_settings,
                     'week_schedule' => $hotel->week_schedule,
                     'blocked_dates' => $hotel->blocked_dates,
-                    'is_active' => $hotel->is_active,
+                    'identity_images' => $hotel->identity_images,
+                    'lease_agreement' => $hotel->lease_agreement,
                     'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
-                    
+                    'created_at' => $hotel->created_at,
+                    'updated_at' => $hotel->updated_at,
                 ];
             });
 

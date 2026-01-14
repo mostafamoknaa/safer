@@ -65,6 +65,14 @@ class Trip extends Model
     }
 
     /**
+     * Get closed seats for this trip.
+     */
+    public function closedSeats(): HasMany
+    {
+        return $this->hasMany(ClosedSeat::class);
+    }
+
+    /**
      * Get available seats count for this trip.
      */
     public function getAvailableSeatsCountAttribute(): int

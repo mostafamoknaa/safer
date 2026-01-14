@@ -41,6 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/buses', [\App\Http\Controllers\Api\ServiceController::class, 'getBuses']);
     Route::get('/services/trips', [\App\Http\Controllers\Api\ServiceController::class, 'getTrips']);
     Route::get('/services/trips/{trip}', [\App\Http\Controllers\Api\ServiceController::class, 'getTripDetails']);
+    Route::get('/services/trips/{trip}/unavailable-seats', [\App\Http\Controllers\Api\ServiceController::class, 'getUnavailableSeats']);
+    Route::post('/services/trips/{trip}/toggle-seats', [\App\Http\Controllers\Api\ServiceController::class, 'toggleSeatStatus']);
     Route::get('/services/private-cars', [\App\Http\Controllers\Api\ServiceController::class, 'getPrivateCars']);
     Route::post('/services/bus-request', [\App\Http\Controllers\Api\ServiceController::class, 'createBusRequest']);
     Route::post('/services/private-car-request', [\App\Http\Controllers\Api\ServiceController::class, 'createPrivateCarRequest']);
@@ -59,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
     Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
     Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
+    Route::get('/rooms/{room}', [\App\Http\Controllers\Api\HotelController::class, 'getRoomDetails']);
     Route::post('/hotels/{hotel}/rate', [\App\Http\Controllers\Api\HotelController::class, 'addRating']);
     Route::post('/hotels/{hotel}/review', [\App\Http\Controllers\Api\HotelController::class, 'addReview']);
     Route::post('/hotels/check-availability', [\App\Http\Controllers\Api\HotelController::class, 'checkRoomAvailability']);
@@ -115,6 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Cars
     Route::apiResource('user/cars', \App\Http\Controllers\Api\UserCarController::class);
+    Route::post('user/cars-update/{car}', [\App\Http\Controllers\Api\UserCarController::class, 'update']);
     Route::post('/user/cars/{car}/clone', [\App\Http\Controllers\Api\UserCarController::class, 'clone']);
 
     // User Events
