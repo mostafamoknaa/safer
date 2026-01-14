@@ -21,6 +21,8 @@ class PrivateCar extends Model
         'max_speed',
         'acceleration',
         'power',
+        'fuel_type',
+        'transmission',
         'notes_ar',
         'notes_en',
         'is_active',

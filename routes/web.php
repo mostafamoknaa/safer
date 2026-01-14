@@ -10,16 +10,163 @@ use App\Http\Controllers\Admin\HotelRoomController;
 use App\Http\Controllers\Admin\PolicyController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\MasterServiceController;
+use App\Http\Controllers\Web\PrivateCarController;
+use App\Http\Controllers\Web\ProfileController; // Import ProfileController
+use App\Http\Controllers\Web\ContactController; // Import ContactController
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+// Public Services Routes
+Route::get('/services/buses', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'buses'
+])->name('web.services.buses');
+Route::get('/services/trips', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'trips'
+])->name('web.services.trips');
+Route::get('/services/trips/{trip}', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'showTrip'
+])->name('web.services.trips.show');
+Route::get('/services/private-cars', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'privateCars'
+])->name('web.services.private-cars');
+
+// New Private Cars Routes
+Route::get('/private-cars', [PrivateCarController::class, 'index'])->name('web.private_cars.index');
+Route::get('/private-cars/{car}', [PrivateCarController::class, 'show'])->name('web.private_cars.show');
+
+// Contact Us
+Route::get('/contact-us', [ContactController::class, 'index'])->name('web.contact');
+Route::post('/contact-us', [ContactController::class, 'store'])->name('web.contact.store');
+
+// Bus Booking Routes
+Route::get('/buses/search', [\App\Http\Controllers\Web\BusBookingController::class, 'search'])->name('web.buses.search');
+Route::post('/buses/search', [\App\Http\Controllers\Web\BusBookingController::class, 'searchResults'])->name('web.buses.search.results');
+Route::get('/buses/{trip}/select-seat', [\App\Http\Controllers\Web\BusBookingController::class, 'selectSeat'])->name('web.buses.select-seat');
+Route::post('/buses/{trip}/confirm-seat', [\App\Http\Controllers\Web\BusBookingController::class, 'confirmSeat'])->name('web.buses.confirm-seat')->middleware('auth');
+Route::get('/buses/payment', [\App\Http\Controllers\Web\BusBookingController::class, 'payment'])->name('web.buses.payment')->middleware('auth');
+Route::post('/buses/payment', [\App\Http\Controllers\Web\BusBookingController::class, 'processPayment'])->name('web.buses.process-payment')->middleware('auth');
+Route::get('/buses/confirmation/{serviceRequest}', [\App\Http\Controllers\Web\BusBookingController::class, 'confirmation'])->name('web.buses.confirmation')->middleware('auth');
+
+// Public Website Routes
+Route::get('/', [\App\Http\Controllers\Web\HomeController::class, 'index'])->name('web.home');
+
+// Public Hotels Routes
+Route::get('/hotels', [\App\Http\Controllers\Web\HotelController::class, 'index'])->name('web.hotels.index');
+Route::get('/hotels/{hotel}', [\App\Http\Controllers\Web\HotelController::class, 'show'])->name('web.hotels.show');
+Route::get('/hotels/{hotel}/rooms', [
+    \App\Http\Controllers\Web\HotelController::class,
+    'rooms'
+])->name('web.hotels.rooms');
+
+// Hotel Collections (Show All)
+Route::get('/popular-hotels', [
+    \App\Http\Controllers\Web\HotelController::class,
+    'popular'
+])->name('web.hotels.popular');
+Route::get('/nearby-hotels', [\App\Http\Controllers\Web\HotelController::class, 'nearby'])->name('web.hotels.nearby');
+Route::get('/discovery', [\App\Http\Controllers\Web\HotelController::class, 'discovery'])->name('web.hotels.discovery');
+
+// Public Events Routes
+Route::get('/events', [\App\Http\Controllers\Web\EventController::class, 'index'])->name('web.events.index');
+Route::get('/events/{event}', [\App\Http\Controllers\Web\EventController::class, 'show'])->name('web.events.show');
+
+// Public Services Routes
+Route::get('/services/buses', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'buses'
+])->name('web.services.buses');
+Route::get('/services/trips', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'trips'
+])->name('web.services.trips');
+Route::get('/services/trips/{trip}', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'showTrip'
+])->name('web.services.trips.show');
+Route::get('/services/private-cars', [
+    \App\Http\Controllers\Web\ServiceController::class,
+    'privateCars'
+])->name('web.services.private-cars');
+
+// Protected Routes (Require Authentication)
+Route::middleware(['auth'])->group(function () {
+    // Bookings
+    Route::get('/my-bookings', [\App\Http\Controllers\Web\BookingController::class, 'index'])->name('web.bookings.index');
+    Route::get('/bookings/create', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'create'
+    ])->name('web.bookings.create');
+    Route::post('/bookings', [\App\Http\Controllers\Web\BookingController::class, 'store'])->name('web.bookings.store');
+    Route::get('/bookings/{booking}', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'show'
+    ])->name('web.bookings.show');
+    Route::post('/bookings/{booking}/cancel', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'cancel'
+    ])->name('web.bookings.cancel');
+
+    // Favorites
+    Route::get('/favorites', [\App\Http\Controllers\Web\FavoriteController::class, 'index'])->name('web.favorites.index');
+    Route::post('/favorites/toggle', [
+        \App\Http\Controllers\Web\FavoriteController::class,
+        'toggle'
+    ])->name('web.favorites.toggle');
+
+    // Conversations
+    Route::get('/conversation', [
+        \App\Http\Controllers\Web\ConversationController::class,
+        'index'
+    ])->name('web.conversations.index');
+    Route::post('/conversation/message', [
+        \App\Http\Controllers\Web\ConversationController::class,
+        'sendMessage'
+    ])->name('web.conversations.send-message');
+
+    // Events - Purchase Tickets
+    Route::post('/events/purchase', [
+        \App\Http\Controllers\Web\EventController::class,
+        'purchaseTickets'
+    ])->name('web.events.purchase');
+    Route::get('/my-tickets', [
+        \App\Http\Controllers\Web\EventController::class,
+        'myTickets'
+    ])->name('web.events.my-tickets');
+
+    // Services - Requests
+    Route::post('/services/bus-request', [
+        \App\Http\Controllers\Web\ServiceController::class,
+        'createBusRequest'
+    ])->name('web.services.bus-request');
+    Route::post('/services/private-car-request', [
+        \App\Http\Controllers\Web\ServiceController::class,
+        'createPrivateCarRequest'
+    ])->name('web.services.private-car-request');
+    Route::get('/my-service-requests', [
+        \App\Http\Controllers\Web\ServiceController::class,
+        'myRequests'
+    ])->name('web.services.my-requests');
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('web.profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('web.profile.update');
 });
 
-// Default login route (redirects to admin login)
-Route::get('/login', function () {
-    return redirect()->route('admin.login');
-})->name('login');
+// Web Authentication Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\Web\AuthWebController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Web\AuthWebController::class, 'login']);
+    Route::get('/register', [\App\Http\Controllers\Web\AuthWebController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Web\AuthWebController::class, 'register']);
+});
+
+Route::post('/logout', [
+    \App\Http\Controllers\Web\AuthWebController::class,
+    'logout'
+])->name('logout')->middleware('auth');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
@@ -91,7 +238,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('trips', \App\Http\Controllers\Admin\TripController::class);
         Route::resource('master-services', MasterServiceController::class)->except('show');
         Route::resource('private-cars', \App\Http\Controllers\Admin\PrivateCarController::class);
-        Route::resource('service-requests', \App\Http\Controllers\Admin\ServiceRequestController::class)->except(['create', 'store']);
+        Route::resource('service-requests', \App\Http\Controllers\Admin\ServiceRequestController::class)->except([
+            'create',
+            'store'
+        ]);
 
         // Events routes
         Route::resource('events', \App\Http\Controllers\Admin\EventController::class);
@@ -148,18 +298,30 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('services.private-cars.create');
         Route::post('services/private-cars', [\App\Http\Controllers\Admin\ServiceController::class, 'storePrivateCar'])
             ->name('services.private-cars.store');
-        Route::get('services/private-cars/{privateCar}/edit', [\App\Http\Controllers\Admin\ServiceController::class, 'editPrivateCar'])
+        Route::get('services/private-cars/{privateCar}/edit', [
+            \App\Http\Controllers\Admin\ServiceController::class,
+            'editPrivateCar'
+        ])
             ->name('services.private-cars.edit');
-        Route::put('services/private-cars/{privateCar}', [\App\Http\Controllers\Admin\ServiceController::class, 'updatePrivateCar'])
+        Route::put('services/private-cars/{privateCar}', [
+            \App\Http\Controllers\Admin\ServiceController::class,
+            'updatePrivateCar'
+        ])
             ->name('services.private-cars.update');
-        Route::delete('services/private-cars/{privateCar}', [\App\Http\Controllers\Admin\ServiceController::class, 'destroyPrivateCar'])
+        Route::delete('services/private-cars/{privateCar}', [
+            \App\Http\Controllers\Admin\ServiceController::class,
+            'destroyPrivateCar'
+        ])
             ->name('services.private-cars.destroy');
 
         Route::get('services/requests', [\App\Http\Controllers\Admin\ServiceController::class, 'requests'])
             ->name('services.requests');
         Route::get('services/requests/{request}', [\App\Http\Controllers\Admin\ServiceController::class, 'showRequest'])
             ->name('services.requests.show');
-        Route::patch('services/requests/{request}/status', [\App\Http\Controllers\Admin\ServiceController::class, 'updateRequestStatus'])
+        Route::patch('services/requests/{request}/status', [
+            \App\Http\Controllers\Admin\ServiceController::class,
+            'updateRequestStatus'
+        ])
             ->name('services.requests.update-status');
 
         // Reports
@@ -204,11 +366,17 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
             ->name('conversations.get-or-create');
         Route::get('conversations/{conversation}', [\App\Http\Controllers\Hotel\ConversationController::class, 'show'])
             ->name('conversations.show');
-        Route::post('conversations/{conversation}/message', [\App\Http\Controllers\Hotel\ConversationController::class, 'sendMessage'])
+        Route::post('conversations/{conversation}/message', [
+            \App\Http\Controllers\Hotel\ConversationController::class,
+            'sendMessage'
+        ])
             ->name('conversations.send-message');
         Route::patch('conversations/{conversation}/close', [\App\Http\Controllers\Hotel\ConversationController::class, 'close'])
             ->name('conversations.close');
-        Route::patch('conversations/{conversation}/reopen', [\App\Http\Controllers\Hotel\ConversationController::class, 'reopen'])
+        Route::patch('conversations/{conversation}/reopen', [
+            \App\Http\Controllers\Hotel\ConversationController::class,
+            'reopen'
+        ])
             ->name('conversations.reopen');
 
         Route::post('logout', [\App\Http\Controllers\Hotel\Auth\AuthenticatedSessionController::class, 'destroy'])
