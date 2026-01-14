@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Models\PrivateCar;
 use App\Models\ServiceRequest;
 use App\Models\BusSeat;
+use App\Models\ClosedSeat;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -222,7 +223,15 @@ class ServiceController extends Controller
             // Validate selected seats if provided
             if (!empty($validated['selected_seats'])) {
                 $bookedSeats = $trip->booked_seat_numbers;
+                $closedSeats = ClosedSeat::where('trip_id', $trip->id)->pluck('seat_number')->toArray();
+                
                 foreach ($validated['selected_seats'] as $seatNumber) {
+                    if (in_array($seatNumber, $closedSeats)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => __('api.services.seat_closed', ['seat' => $seatNumber]),
+                        ], 400);
+                    }
                     if (in_array($seatNumber, $bookedSeats)) {
                         return response()->json([
                             'success' => false,
@@ -296,23 +305,52 @@ class ServiceController extends Controller
         try {
             $validated = $request->validate([
                 'private_car_id' => 'required|exists:private_cars,id',
-                'duration_hours' => 'required|integer|min:1|max:8760',
+                'booking_type' => 'required|in:hours,days',
+                'duration' => 'required|integer|min:1',
                 'start_date' => 'required|date|after_or_equal:today',
+                'start_time' => 'required_if:booking_type,hours|date_format:H:i',
                 'notes' => 'nullable|string|max:1000',
             ]);
 
             $car = PrivateCar::findOrFail($validated['private_car_id']);
+            
+            $durationHours = $validated['booking_type'] === 'days' 
+                ? $validated['duration'] * 24 
+                : $validated['duration'];
+            
+            $startDateTime = $validated['start_date'] . ' ' . ($validated['start_time'] ?? '00:00');
+            $endDateTime = date('Y-m-d H:i', strtotime($startDateTime . ' +' . $durationHours . ' hours'));
 
-            // Calculate total price (price is per hour, duration_hours is the rental duration)
-            $totalPrice = $car->price * $validated['duration_hours'];
+            // Check availability
+            $conflict = ServiceRequest::where('private_car_id', $car->id)
+                ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
+                ->where(function($q) use ($startDateTime, $endDateTime) {
+                    $q->where(function($query) use ($startDateTime, $endDateTime) {
+                        $query->whereRaw("CONCAT(start_date, ' ', COALESCE(start_time, '00:00:00')) < ?", [$endDateTime])
+                              ->whereRaw("DATE_ADD(CONCAT(start_date, ' ', COALESCE(start_time, '00:00:00')), INTERVAL duration_hours HOUR) > ?", [$startDateTime]);
+                    });
+                })
+                ->exists();
 
-            // Create service request
+            if ($conflict) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('api.services.car_not_available'),
+                ], 400);
+            }
+
+            $totalPrice = $validated['booking_type'] === 'days'
+                ? $car->price_per_day * $validated['duration']
+                : $car->price_per_hour * $validated['duration'];
+
             $serviceRequest = ServiceRequest::create([
                 'user_id' => Auth::id(),
                 'service_type' => 'private_car',
                 'private_car_id' => $car->id,
-                'duration_hours' => $validated['duration_hours'],
+                'duration_hours' => $durationHours,
                 'start_date' => $validated['start_date'],
+                'start_time' => $validated['start_time'] ?? null,
+                'booking_type' => $validated['booking_type'],
                 'total_price' => $totalPrice,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
@@ -325,6 +363,7 @@ class ServiceController extends Controller
                     'request_id' => $serviceRequest->id,
                     'request_reference' => $serviceRequest->request_reference,
                     'total_price' => $totalPrice,
+                    'end_datetime' => $endDateTime,
                 ],
             ], 201);
 
@@ -340,11 +379,16 @@ class ServiceController extends Controller
     /**
      * Get user service requests.
      */
-    public function getUserRequests(): JsonResponse
+    public function getUserRequests(Request $request): JsonResponse
     {
-        $requests = ServiceRequest::where('user_id', Auth::id())
-            ->with(['trip', 'trip.bus', 'bus', 'privateCar'])
-            ->orderByDesc('created_at')
+        $query = ServiceRequest::where('user_id', Auth::id())
+            ->with(['trip', 'trip.bus', 'bus', 'privateCar']);
+
+        if ($request->filled('type')) {
+            $query->where('service_type', $request->type);
+        }
+
+        $requests = $query->orderByDesc('created_at')
             ->get()
             ->map(function ($request) {
                 $data = [
@@ -377,6 +421,54 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'data' => $requests,
+        ]);
+    }
+
+    /**
+     * Get unavailable seats for a trip.
+     */
+    public function getUnavailableSeats(Trip $trip): JsonResponse
+    {
+        $bookedSeats = BusSeat::where('trip_id', $trip->id)->pluck('seat_number')->toArray();
+        $closedSeats = ClosedSeat::where('trip_id', $trip->id)->pluck('seat_number')->toArray();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'booked_seats' => $bookedSeats,
+                'closed_seats' => $closedSeats,
+                'unavailable_seats' => array_values(array_unique(array_merge($bookedSeats, $closedSeats))),
+            ],
+        ]);
+    }
+
+    /**
+     * Admin: Toggle seat status (open/close).
+     */
+    public function toggleSeatStatus(Request $request, Trip $trip): JsonResponse
+    {
+        $validated = $request->validate([
+            'seat_numbers' => 'required|array',
+            'seat_numbers.*' => 'integer|min:1',
+            'action' => 'required|in:close,open',
+        ]);
+
+        foreach ($validated['seat_numbers'] as $seatNumber) {
+            if ($validated['action'] === 'close') {
+                ClosedSeat::firstOrCreate([
+                    'trip_id' => $trip->id,
+                    'seat_number' => $seatNumber,
+                ]);
+            } else {
+                ClosedSeat::where('trip_id', $trip->id)
+                    ->where('seat_number', $seatNumber)
+                    ->delete();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => __('api.services.seats_updated'),
         ]);
     }
 

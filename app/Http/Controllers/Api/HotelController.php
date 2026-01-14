@@ -656,6 +656,49 @@ class HotelController extends Controller
         ]);
     }
 
+    /**
+     * Get room details.
+     */
+    public function getRoomDetails(HotelRoom $room): JsonResponse
+    {
+        if (!$room->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => __('api.hotels.room_not_available'),
+            ], 404);
+        }
+
+        $room->load(['hotel', 'media']);
+
+        $images = $room->media->where('type', 'image')->map(function ($media) {
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $room->id,
+                'hotel_id' => $room->hotel_id,
+                'hotel_name' => app()->getLocale() === 'ar' ? $room->hotel->name_ar : $room->hotel->name_en,
+                'name' => $room->name ?? 'Room ' . $room->id,
+                'type' => $room->type ?? 'standard',
+                'price_per_night' => (float) $room->price_per_night,
+                'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
+                'service_fee' => (float) ($room->service_fee ?? 0),
+                'beds_count' => $room->beds_count,
+                'bathrooms_count' => $room->bathrooms_count,
+                'rooms_count' => $room->rooms_count,
+                'max_guests' => $room->max_guests ?? $room->beds_count * 2,
+                'description' => $room->description,
+                'amenities' => $room->amenities ? json_decode($room->amenities) : [],
+                'images' => $images,
+            ],
+        ]);
+    }
+
     
     /**
      * Get all countries where hotels are located.
