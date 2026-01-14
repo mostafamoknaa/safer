@@ -109,5 +109,13 @@ class User extends Authenticatable
     {
         return $value ? asset('uploads/profile/' . $value) : null;
     }
+
+    /**
+     * Get favorites for this user.
+     */
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
 }
 
