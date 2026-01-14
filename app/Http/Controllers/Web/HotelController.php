@@ -15,7 +15,7 @@ class HotelController extends Controller
     public function index(Request $request)
     {
         $query = Hotel::where('is_active', true)
-            ->with(['province', 'ratings']);
+            ->with(['province', 'reviews']);
 
         // Search by name
         if ($request->filled('search')) {
@@ -33,8 +33,8 @@ class HotelController extends Controller
 
         // Filter by rating
         if ($request->filled('min_rating')) {
-            $query->withAvg('ratings', 'rating')
-                ->having('ratings_avg_rating', '>=', $request->min_rating);
+            $query->withAvg('reviews', 'rating')
+                ->having('reviews_avg_rating', '>=', $request->min_rating);
         }
 
         // Filter by price range
@@ -50,7 +50,7 @@ class HotelController extends Controller
             });
         }
 
-        $hotels = $query->withAvg('ratings', 'rating')
+        $hotels = $query->withAvg('reviews', 'rating')
             ->paginate(12);
 
         $provinces = Province::all();
@@ -96,5 +96,46 @@ class HotelController extends Controller
         $rooms = $query->get();
 
         return view('web.hotels.rooms', compact('hotel', 'rooms'));
+    }
+
+    /**
+     * Display popular hotels.
+     */
+    public function popular()
+    {
+        $hotels = Hotel::where('is_active', true)
+            ->with(['media', 'province', 'rooms'])
+            ->orderBy('rate', 'desc')
+            ->paginate(12);
+
+        $title = 'الاماكن الرائجة';
+        return view('web.hotels.index_collection', compact('hotels', 'title'));
+    }
+
+    /**
+     * Display nearby hotels.
+     */
+    public function nearby()
+    {
+        $hotels = Hotel::where('is_active', true)
+            ->with(['media', 'province', 'rooms'])
+            ->latest()
+            ->paginate(12);
+
+        $title = 'الاماكن القريبة';
+        return view('web.hotels.index_collection', compact('hotels', 'title'));
+    }
+
+    /**
+     * Display discovery hotels (now Events).
+     */
+    public function discovery()
+    {
+        $events = \App\Models\Event::where('is_active', true)
+            ->orderBy('event_date', 'desc')
+            ->paginate(12);
+
+        $title = 'اكتشاف اماكن';
+        return view('web.events.discovery', compact('events', 'title'));
     }
 }

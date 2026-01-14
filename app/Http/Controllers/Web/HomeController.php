@@ -42,7 +42,7 @@ class HomeController extends Controller
             ->get();
 
         // Get upcoming events (for discovery section)
-        $events = Event::where('is_active', true)
+        $events = \App\Models\Event::where('is_active', true)
             ->orderBy('event_date', 'desc')
             ->take(5)
             ->get();

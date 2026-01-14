@@ -28,20 +28,22 @@ class ServiceController extends Controller
      */
     public function trips(Request $request)
     {
-        $query = Trip::where('is_active', true)
-            ->with(['bus', 'province']);
+        $query = \App\Models\Trip::where('is_active', true)
+            ->with(['bus']);
 
-        // Filter by province
+        /*
+        // Filter by province - Trips use string locations, implementation pending if needed
         if ($request->filled('province_id')) {
-            $query->where('province_id', $request->province_id);
+            // $query->where('province_id', $request->province_id);
         }
+        */
 
         // Filter by date
         if ($request->filled('date')) {
-            $query->whereDate('departure_time', $request->date);
+            $query->whereDate('trip_date', $request->date);
         }
 
-        $trips = $query->orderBy('departure_time', 'asc')->get();
+        $trips = $query->orderBy('trip_date', 'asc')->orderBy('trip_time', 'asc')->get();
 
         return view('web.services.trips', compact('trips'));
     }
@@ -51,9 +53,9 @@ class ServiceController extends Controller
      */
     public function showTrip(Trip $trip)
     {
-        $trip->load(['bus', 'province']);
+        $trip->load(['bus']);
 
-        return view('web.services.trip-details', compact('trip'));
+        return view('web.trips.show', compact('trip'));
     }
 
     /**
