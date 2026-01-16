@@ -84,11 +84,18 @@ class UserBusController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        if ($bus->trips()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكن حذف الباص لأنه مرتبط برحلات',
+            ], 400);
+        }
+
         $bus->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Bus deleted successfully',
+            'message' => 'تم حذف الباص بنجاح',
         ]);
     }
 

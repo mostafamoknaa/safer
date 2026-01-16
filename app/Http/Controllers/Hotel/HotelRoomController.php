@@ -44,6 +44,7 @@ class HotelRoomController extends Controller
     {
         $user = auth()->user();
         $hotels = $user->managedHotels()->where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $selectedHotelId = $request->get('hotel_id');
 
         // التحقق من أن الفندق المحدد من الفنادق المسئول عنها
@@ -51,7 +52,7 @@ class HotelRoomController extends Controller
             $selectedHotelId = null;
         }
 
-        return view('hotel.hotel-rooms.create', compact('hotels', 'selectedHotelId'));
+        return view('hotel.hotel-rooms.create', compact('hotels', 'services', 'selectedHotelId'));
     }
 
     /**
@@ -86,9 +87,10 @@ class HotelRoomController extends Controller
             abort(403, 'ليس لديك صلاحية لتعديل هذه الغرفة.');
         }
 
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $hotelRoom->load('media');
 
-        return view('hotel.hotel-rooms.edit', compact('hotelRoom'));
+        return view('hotel.hotel-rooms.edit', compact('hotelRoom', 'services'));
     }
 
     /**
@@ -205,6 +207,7 @@ class HotelRoomController extends Controller
             'checkin_time' => ['nullable', 'date_format:H:i'],
             'checkout_time' => ['nullable', 'date_format:H:i'],
             'services' => ['nullable', 'array'],
+            'services.*' => ['exists:services,id'],
             'blocked_slots' => ['nullable', 'array'],
             'blocked_slots.*.from_date' => ['nullable', 'date'],
             'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],

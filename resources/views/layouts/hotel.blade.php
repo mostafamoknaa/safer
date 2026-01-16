@@ -132,7 +132,7 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2" style="max-height: calc(100vh - 280px);">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>
@@ -198,7 +198,7 @@
                     </button>
                 </div>
 
-                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2" style="max-height: calc(100vh - 280px);">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>

@@ -159,15 +159,14 @@
             
             <div id="servicesContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 @php
-                    $services = ['wifi', 'parking', 'pool', 'food', 'sports_center', 'elevator', 'social_rooms', 'opening', 'kitchen', 'cooking_basics', 'dishes_silverware', 'oven', 'hot_water_kettle', 'dining_table', 'fire_extinguisher', 'first_aid_kit', 'crib', 'air_condition', 'indoor_fireplace', 'heating', 'smoke_alarm', 'washer', 'hangers', 'bed_linens', 'iron', 'clothing_storage', 'tv', 'internet_connection', 'high_chair', 'portable_fan', 'freezer', 'stove', 'microwave', 'waterfront', 'fire_pit', 'free_parking', 'beach_access', 'shampoo', 'body_soap', 'shower_gel'];
-                    $hotelServices = old('services', $hotel->services ?? []);
+                    $hotelServices = old('services', isset($hotel) && $hotel->services ? array_column($hotel->services, 'id') : []);
                 @endphp
                 @foreach($services as $service)
-                    <label class="service-item flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all duration-200 group" data-service="{{ __('hotel.hotels.services.' . $service) }}">
-                        <input type="checkbox" name="services[]" value="{{ $service }}"
+                    <label class="service-item flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all duration-200 group" data-service="{{ app()->getLocale() === 'ar' ? $service->name_ar : $service->name_en }}">
+                        <input type="checkbox" name="services[]" value="{{ $service->id }}"
                                class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-2"
-                               @checked(in_array($service, $hotelServices))>
-                        <span class="text-sm text-slate-700 group-hover:text-indigo-700 font-medium">{{ __('hotel.hotels.services.' . $service) }}</span>
+                               @checked(in_array($service->id, $hotelServices))>
+                        <span class="text-sm text-slate-700 group-hover:text-indigo-700 font-medium">{{ app()->getLocale() === 'ar' ? $service->name_ar : $service->name_en }}</span>
                     </label>
                 @endforeach
             </div>
