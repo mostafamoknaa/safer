@@ -34,8 +34,9 @@ class HotelController extends Controller
     public function create(): View
     {
         $provinces = Province::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
 
-        return view('hotel.hotels.create', compact('provinces'));
+        return view('hotel.hotels.create', compact('provinces', 'services'));
     }
 
     /**
@@ -68,9 +69,10 @@ class HotelController extends Controller
         }
 
         $provinces = Province::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $hotel->load('media');
 
-        return view('hotel.hotels.edit', compact('hotel', 'provinces'));
+        return view('hotel.hotels.edit', compact('hotel', 'provinces', 'services'));
     }
 
     /**
@@ -114,7 +116,7 @@ class HotelController extends Controller
             'about_info_ar' => ['nullable', 'string'],
             'about_info_en' => ['nullable', 'string'],
             'services' => ['nullable', 'array'],
-            'services.*' => ['string'],
+            'services.*' => ['exists:services,id'],
             'is_active' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],

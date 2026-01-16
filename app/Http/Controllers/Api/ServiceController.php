@@ -382,7 +382,7 @@ class ServiceController extends Controller
     public function getUserRequests(Request $request): JsonResponse
     {
         $query = ServiceRequest::where('user_id', Auth::id())
-            ->with(['trip', 'trip.bus', 'bus', 'privateCar']);
+            ->with(['trip.bus', 'bus', 'privateCar', 'user']);
 
         if ($request->filled('type')) {
             $query->where('service_type', $request->type);
@@ -390,29 +390,30 @@ class ServiceController extends Controller
 
         $requests = $query->orderByDesc('created_at')
             ->get()
-            ->map(function ($request) {
+            ->map(function ($req) {
                 $data = [
-                    'id' => $request->id,
-                    'request_reference' => $request->request_reference,
-                    'service_type' => $request->service_type,
-                    'total_price' => (float) $request->total_price,
-                    'status' => $request->status,
-                    'created_at' => $request->created_at->format('Y-m-d H:i:s'),
+                    'id' => $req->id,
+                    'request_reference' => $req->request_reference,
+                    'service_type' => $req->service_type,
+                    'total_price' => (float) $req->total_price,
+                    'status' => $req->status,
+                    'user' => $req->user,
+                    'created_at' => $req->created_at->format('Y-m-d H:i:s'),
                 ];
 
-                if ($request->service_type === 'bus') {
-                    $data['trip'] = $request->trip ? [
-                        'departure_location' => app()->getLocale() === 'ar' ? $request->trip->departure_location_ar : $request->trip->departure_location_en,
-                        'arrival_location' => app()->getLocale() === 'ar' ? $request->trip->arrival_location_ar : $request->trip->arrival_location_en,
-                        'trip_date' => $request->trip->trip_date->format('Y-m-d'),
+                if ($req->service_type === 'bus') {
+                    $data['trip'] = $req->trip ? [
+                        'departure_location' => app()->getLocale() === 'ar' ? $req->trip->departure_location_ar : $req->trip->departure_location_en,
+                        'arrival_location' => app()->getLocale() === 'ar' ? $req->trip->arrival_location_ar : $req->trip->arrival_location_en,
+                        'trip_date' => $req->trip->trip_date->format('Y-m-d'),
                     ] : null;
-                    $data['passengers_count'] = $request->passengers_count;
+                    $data['passengers_count'] = $req->passengers_count;
                 } else {
-                    $data['car'] = $request->privateCar ? [
-                        'name' => app()->getLocale() === 'ar' ? $request->privateCar->name_ar : $request->privateCar->name_en,
+                    $data['car'] = $req->privateCar ? [
+                        'name' => app()->getLocale() === 'ar' ? $req->privateCar->name_ar : $req->privateCar->name_en,
                     ] : null;
-                    $data['duration_hours'] = $request->duration_hours;
-                    $data['start_date'] = $request->start_date ? $request->start_date->format('Y-m-d') : null;
+                    $data['duration_hours'] = $req->duration_hours;
+                    $data['start_date'] = $req->start_date ? $req->start_date->format('Y-m-d') : null;
                 }
 
                 return $data;
@@ -447,6 +448,10 @@ class ServiceController extends Controller
      */
     public function toggleSeatStatus(Request $request, Trip $trip): JsonResponse
     {
+        if ($trip->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $validated = $request->validate([
             'seat_numbers' => 'required|array',
             'seat_numbers.*' => 'integer|min:1',
@@ -468,7 +473,7 @@ class ServiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __('api.services.seats_updated'),
+            'message' => 'تم تحديث حالة المقاعد بنجاح',
         ]);
     }
 

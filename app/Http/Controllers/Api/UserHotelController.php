@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Hotel;
 use App\Models\HotelMedia;
+use App\Models\HotelRoom;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,7 +43,7 @@ class UserHotelController extends Controller
                     'services' => $hotel->services,
                     'is_active' => $hotel->is_active,
                     'schedule_type' => $hotel->schedule_type,
-                    'hourly_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
+                    'daily_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
                     'booking_settings' => $hotel->booking_settings,
                     'week_schedule' => $hotel->week_schedule,
                     'blocked_dates' => $hotel->blocked_dates,
@@ -190,8 +192,8 @@ class UserHotelController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'services' => 'nullable|array',
             'services.*' => 'exists:services,id',
-            'lat' => 'required|numeric',
-            'lang' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'lang' => 'nullable|numeric',
             'country' => 'nullable|string|max:255',
             'website_url' => 'nullable|string|max:255',
         ]);
@@ -243,6 +245,8 @@ class UserHotelController extends Controller
             ], 403);
         }
 
+        $hotel->load(['media', 'rooms.media', 'bookings.user', 'bookings.room']);
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -258,13 +262,95 @@ class UserHotelController extends Controller
                 'description_ar' => $hotel->description_ar,
                 'description_en' => $hotel->description_en,
                 'is_active' => $hotel->is_active,
+                'lat' => $hotel->lat,
+                'lang' => $hotel->lang,
+                'country' => $hotel->country,
+                'website_url' => $hotel->website_url,
+                'province' => $hotel->province,
+                'services' => $hotel->services,
+                'schedule_type' => $hotel->schedule_type,
+                'hourly_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
+                'booking_settings' => $hotel->booking_settings,
+                'week_schedule' => $hotel->week_schedule,
+                'blocked_dates' => $hotel->blocked_dates,
+                'identity_images' => $hotel->identity_images,
+                'lease_agreement' => $hotel->lease_agreement,
                 'images' => $hotel->media->map(function($media) {
                     return [
                         'id' => $media->id,
                         'url' => asset('storage/' . $media->file_path),
                     ];
                 }),
+                'rooms' => $hotel->rooms->map(function($room) {
+                    return [
+                        'id' => $room->id,
+                        'name' => $room->name,
+                        'price_per_night' => (float) $room->price_per_night,
+                        'beds_count' => $room->beds_count,
+                        'bathrooms_count' => $room->bathrooms_count,
+                        'rooms_count' => $room->rooms_count,
+                        'cleaning_fee' => $room->cleaning_fee,
+                        'service_fee' => $room->service_fee,
+                        'is_active' => $room->is_active,
+                        'services' => $room->services,
+                        'images' => $room->media->map(fn($m) => [
+                            'id' => $m->id,
+                            'url' => asset('storage/' . $m->file_path),
+                        ]),
+                    ];
+                }),
+                'bookings' => $hotel->bookings->map(function($booking) {
+                    return [
+                        'id' => $booking->id,
+                        'user' => [
+                            'id' => $booking->user->id,
+                            'name' => $booking->user->name,
+                            'email' => $booking->user->email,
+                        ],
+                        'room' => $booking->room ? [
+                            'id' => $booking->room->id,
+                            'name' => $booking->room->name,
+                        ] : null,
+                        'check_in' => $booking->check_in,
+                        'check_out' => $booking->check_out,
+                        'total_price' => (float) $booking->total_price,
+                        'status' => $booking->status,
+                        'created_at' => $booking->created_at,
+                    ];
+                }),
+                'created_at' => $hotel->created_at,
+                'updated_at' => $hotel->updated_at,
             ],
+        ]);
+    }
+
+    /**
+     * Delete hotel.
+     */
+    public function destroy(Hotel $hotel): JsonResponse
+    {
+        if ($hotel->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مصرح لك بحذف هذا الفندق',
+            ], 403);
+        }
+
+        foreach ($hotel->media as $media) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        foreach ($hotel->rooms as $room) {
+            foreach ($room->media as $media) {
+                Storage::disk('public')->delete($media->file_path);
+            }
+        }
+
+        $hotel->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف الفندق بنجاح',
         ]);
     }
 
@@ -310,5 +396,64 @@ class UserHotelController extends Controller
             'message' => 'Hotel cloned successfully pending approval',
             'data' => ['hotel_id' => $newHotel->id],
         ], 201);
+    }
+
+    /**
+     * Get all hotel bookings.
+     */
+    public function getBookings(Hotel $hotel): JsonResponse
+    {
+        if ($hotel->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $bookings = Booking::where('hotel_id', $hotel->id)
+            ->with(['bookedRooms.room.media', 'user'])
+            ->latest()
+            ->get()
+            ->map(function($booking) {
+                return [
+                    'id' => $booking->id,
+                    'user' => $booking->user,
+                    'check_in_date' => $booking->check_in_date,
+                    'check_out_date' => $booking->check_out_date,
+                    'guests_count' => $booking->guests_count,
+                    'rooms_count' => $booking->rooms_count,
+                    'total_price' => (float) $booking->total_price,
+                    'status' => $booking->status,
+                    'booking_reference' => $booking->booking_reference,
+                    'rooms' => $booking->bookedRooms->map(fn($br) => [
+                        'id' => $br->room->id,
+                        'name' => $br->room->name,
+                        'price_per_night' => (float) $br->room->price_per_night,
+                        'images' => $br->room->media->map(fn($m) => asset('storage/' . $m->file_path)),
+                    ]),
+                    'created_at' => $booking->created_at,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $bookings,
+        ]);
+    }
+
+    /**
+     * Get all hotel rooms.
+     */
+    public function getRooms(Hotel $hotel): JsonResponse
+    {
+        if ($hotel->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $rooms = HotelRoom::where('hotel_id', $hotel->id)
+            ->with('media')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $rooms,
+        ]);
     }
 }
