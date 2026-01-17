@@ -19,7 +19,7 @@ class HotelController extends Controller
     public function index(): View
     {
         $user = auth()->user();
-        $hotels = $user->managedHotels()
+        $hotels = Hotel::where('user_id', $user->id)
             ->with('province')
             ->withCount('rooms')
             ->orderByDesc('created_at')
@@ -45,11 +45,9 @@ class HotelController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedData($request);
+        $data['user_id'] = auth()->id();
 
         $hotel = Hotel::create($data);
-
-        // ربط الفندق بالمسئول الحالي
-        auth()->user()->managedHotels()->attach($hotel->id);
 
         $this->handleMedia($request, $hotel);
 
@@ -63,8 +61,7 @@ class HotelController extends Controller
      */
     public function edit(Hotel $hotel): View
     {
-        // التحقق من أن المستخدم مسئول عن هذا الفندق
-        if (!auth()->user()->managesHotel($hotel->id)) {
+        if ($hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لتعديل هذا الفندق.');
         }
 
@@ -80,8 +77,7 @@ class HotelController extends Controller
      */
     public function update(Request $request, Hotel $hotel): RedirectResponse
     {
-        // التحقق من أن المستخدم مسئول عن هذا الفندق
-        if (!auth()->user()->managesHotel($hotel->id)) {
+        if ($hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لتعديل هذا الفندق.');
         }
 

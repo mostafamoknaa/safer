@@ -201,6 +201,111 @@ class ReportController extends Controller
 
         return view('hotel.reports.payments', compact('payments', 'hotels'));
     }
+
+    /**
+     * Trips report for hotel managers.
+     */
+    public function trips(Request $request)
+    {
+        $manager = auth()->user();
+
+        $query = \App\Models\Trip::with(['bus', 'serviceRequests'])
+            ->where('user_id', $manager->id)
+            ->orderByDesc('trip_date');
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('trip_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('trip_date', '<=', $request->to_date);
+        }
+
+        if ($request->query('export') === 'csv') {
+            $trips = $query->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="trips_report.csv"',
+            ];
+
+            $callback = static function () use ($trips) {
+                $handle = fopen('php://output', 'w');
+                fwrite($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+                fputcsv($handle, ['ID', 'Bus', 'From', 'To', 'Date', 'Time', 'Price', 'Bookings', 'Status']);
+
+                foreach ($trips as $trip) {
+                    fputcsv($handle, [
+                        $trip->id,
+                        $trip->bus ? (app()->getLocale() === 'ar' ? $trip->bus->name_ar : $trip->bus->name_en) : null,
+                        app()->getLocale() === 'ar' ? $trip->departure_location_ar : $trip->departure_location_en,
+                        app()->getLocale() === 'ar' ? $trip->arrival_location_ar : $trip->arrival_location_en,
+                        optional($trip->trip_date)->format('Y-m-d'),
+                        $trip->trip_time,
+                        $trip->price,
+                        $trip->serviceRequests->count(),
+                        $trip->is_active ? 'Active' : 'Inactive',
+                    ]);
+                }
+
+                fclose($handle);
+            };
+
+            return ResponseFactory::stream($callback, 200, $headers);
+        }
+
+        $trips = $query->paginate(20)->withQueryString();
+
+        return view('hotel.reports.trips', compact('trips'));
+    }
+
+    /**
+     * Cars report for hotel managers.
+     */
+    public function cars(Request $request)
+    {
+        $manager = auth()->user();
+
+        $query = \App\Models\PrivateCar::with('serviceRequests')
+            ->where('user_id', $manager->id)
+            ->orderByDesc('created_at');
+
+        if ($request->query('export') === 'csv') {
+            $cars = $query->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="cars_report.csv"',
+            ];
+
+            $callback = static function () use ($cars) {
+                $handle = fopen('php://output', 'w');
+                fwrite($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+                fputcsv($handle, ['ID', 'Name', 'Model', 'Price/Day', 'Price/Hour', 'Seats', 'Bookings', 'Status']);
+
+                foreach ($cars as $car) {
+                    fputcsv($handle, [
+                        $car->id,
+                        app()->getLocale() === 'ar' ? $car->name_ar : $car->name_en,
+                        $car->car_model,
+                        $car->price_per_day,
+                        $car->price_per_hour,
+                        $car->seats_count,
+                        $car->serviceRequests->count(),
+                        $car->is_active ? 'Active' : 'Inactive',
+                    ]);
+                }
+
+                fclose($handle);
+            };
+
+            return ResponseFactory::stream($callback, 200, $headers);
+        }
+
+        $cars = $query->paginate(20)->withQueryString();
+
+        return view('hotel.reports.cars', compact('cars'));
+    }
 }
-
-
