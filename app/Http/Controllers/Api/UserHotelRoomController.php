@@ -29,7 +29,7 @@ class UserHotelRoomController extends Controller
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'cleaning_fee' => 'nullable',
-            'service_fee' => 'nullabel',
+            'service_fee' => 'nullable',
             'name' => 'required|string',
         ]);
 
@@ -91,7 +91,7 @@ class UserHotelRoomController extends Controller
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'cleaning_fee' => 'nullable',
-            'service_fee' => 'nullabel',
+            'service_fee' => 'nullable',
             'name' => 'required|string',
         ]);
 
@@ -171,11 +171,9 @@ class UserHotelRoomController extends Controller
 
         for ($i = 0; $i < $cloneCount; $i++) {
             $newRoom = $room->replicate();
-            $newRoom->name_en .= ' (Copy ' . ($i + 1) . ')';
-            $newRoom->name_ar .= ' (نسخة ' . ($i + 1) . ')';
-            $newRoom->push(); // Save the new model
+            $newRoom->name .= ' (Copy ' . ($i + 1) . ')';
+            $newRoom->push();
 
-            // Clone media
             foreach ($room->media as $media) {
                 $newMedia = $media->replicate();
                 $newMedia->room_id = $newRoom->id;
@@ -314,6 +312,38 @@ class UserHotelRoomController extends Controller
             'success' => true,
             'message' => 'Rooms updated successfully',
             'data' => ['updated_rooms_ids' => $updatedRooms],
+        ]);
+    }
+
+    /**
+     * Delete multiple rooms.
+     */
+    public function bulkDelete(Request $request, Hotel $hotel): JsonResponse
+    {
+        if ($hotel->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'room_ids' => 'required|array|min:1',
+            'room_ids.*' => 'required|exists:hotel_rooms,id',
+        ]);
+
+        $deletedCount = 0;
+        foreach ($validated['room_ids'] as $roomId) {
+            $room = HotelRoom::find($roomId);
+
+            if (!$room || $room->hotel_id !== $hotel->id) {
+                continue;
+            }
+
+            $room->delete();
+            $deletedCount++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $deletedCount . ' rooms deleted successfully',
         ]);
     }
 }

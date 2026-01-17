@@ -394,5 +394,14 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
             ->name('reports.bookings');
         Route::get('reports/payments', [\App\Http\Controllers\Hotel\ReportController::class, 'payments'])
             ->name('reports.payments');
+        Route::get('reports/trips', [\App\Http\Controllers\Hotel\ReportController::class, 'trips'])
+            ->name('reports.trips');
+        Route::get('reports/cars', [\App\Http\Controllers\Hotel\ReportController::class, 'cars'])
+            ->name('reports.cars');
+
+        // Buses, Cars, and Trips management
+        Route::resource('buses', \App\Http\Controllers\Hotel\BusController::class)->except('show');
+        Route::resource('cars', \App\Http\Controllers\Hotel\CarController::class)->except('show');
+        Route::resource('trips', \App\Http\Controllers\Hotel\TripController::class)->except('show');
     });
 });
