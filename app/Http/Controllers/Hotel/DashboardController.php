@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hotel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Hotel;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -13,7 +14,7 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         $user = auth()->user();
-        $hotels = $user->managedHotels()->withCount('rooms')->get();
+        $hotels = Hotel::where('user_id', $user->id)->withCount('rooms')->get();
         
         $totalRooms = $hotels->sum('rooms_count');
         $totalConversations = \App\Models\Conversation::whereIn('hotel_id', $hotels->pluck('id'))
@@ -28,6 +29,10 @@ class DashboardController extends Controller
         ->where('is_read', false)
         ->count();
 
-        return view('hotel.dashboard', compact('hotels', 'totalRooms', 'totalConversations', 'unreadMessages'));
+        $totalBuses = \App\Models\Bus::where('user_id', $user->id)->count();
+        $totalCars = \App\Models\PrivateCar::where('user_id', $user->id)->count();
+        $totalTrips = \App\Models\Trip::where('user_id', $user->id)->count();
+
+        return view('hotel.dashboard', compact('hotels', 'totalRooms', 'totalConversations', 'unreadMessages', 'totalBuses', 'totalCars', 'totalTrips'));
     }
 }

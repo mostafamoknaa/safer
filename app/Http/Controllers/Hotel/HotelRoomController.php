@@ -19,20 +19,19 @@ class HotelRoomController extends Controller
     public function index(Request $request): View
     {
         $user = auth()->user();
-        $managedHotelIds = $user->managedHotels()->pluck('hotels.id');
+        $managedHotelIds = Hotel::where('user_id', $user->id)->pluck('id');
 
         $query = HotelRoom::with('hotel')
             ->whereIn('hotel_id', $managedHotelIds);
 
         if ($request->has('hotel_id') && $request->hotel_id) {
-            // التحقق من أن الفندق من الفنادق المسئول عنها
-            if ($user->managesHotel($request->hotel_id)) {
+            if (in_array($request->hotel_id, $managedHotelIds->toArray())) {
                 $query->where('hotel_id', $request->hotel_id);
             }
         }
 
         $rooms = $query->orderByDesc('created_at')->paginate(12);
-        $hotels = $user->managedHotels()->where('is_active', true)->orderBy('name_ar')->get();
+        $hotels = Hotel::where('user_id', $user->id)->where('is_active', true)->orderBy('name_ar')->get();
 
         return view('hotel.hotel-rooms.index', compact('rooms', 'hotels'));
     }
@@ -43,13 +42,15 @@ class HotelRoomController extends Controller
     public function create(Request $request): View
     {
         $user = auth()->user();
-        $hotels = $user->managedHotels()->where('is_active', true)->orderBy('name_ar')->get();
+        $hotels = Hotel::where('user_id', $user->id)->where('is_active', true)->orderBy('name_ar')->get();
         $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $selectedHotelId = $request->get('hotel_id');
 
-        // التحقق من أن الفندق المحدد من الفنادق المسئول عنها
-        if ($selectedHotelId && !$user->managesHotel($selectedHotelId)) {
-            $selectedHotelId = null;
+        if ($selectedHotelId) {
+            $hotel = Hotel::find($selectedHotelId);
+            if (!$hotel || $hotel->user_id !== $user->id) {
+                $selectedHotelId = null;
+            }
         }
 
         return view('hotel.hotel-rooms.create', compact('hotels', 'services', 'selectedHotelId'));
@@ -63,8 +64,8 @@ class HotelRoomController extends Controller
         $user = auth()->user();
         $data = $this->validatedData($request);
 
-        // التحقق من أن الفندق من الفنادق المسئول عنها
-        if (!$user->managesHotel($data['hotel_id'])) {
+        $hotel = Hotel::find($data['hotel_id']);
+        if (!$hotel || $hotel->user_id !== $user->id) {
             abort(403, 'ليس لديك صلاحية لإضافة غرف لهذا الفندق.');
         }
 
@@ -82,8 +83,8 @@ class HotelRoomController extends Controller
      */
     public function edit(HotelRoom $hotelRoom): View
     {
-        // التحقق من أن المستخدم مسئول عن فندق هذه الغرفة
-        if (!auth()->user()->managesHotel($hotelRoom->hotel_id)) {
+        $hotel = Hotel::find($hotelRoom->hotel_id);
+        if (!$hotel || $hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لتعديل هذه الغرفة.');
         }
 
@@ -98,23 +99,20 @@ class HotelRoomController extends Controller
      */
     public function update(Request $request, HotelRoom $hotelRoom): RedirectResponse
     {
-        // التحقق من أن المستخدم مسئول عن فندق هذه الغرفة
-        if (!auth()->user()->managesHotel($hotelRoom->hotel_id)) {
+        $hotel = Hotel::find($hotelRoom->hotel_id);
+        if (!$hotel || $hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لتعديل هذه الغرفة.');
         }
 
         $data = $this->validatedData($request, $hotelRoom);
 
-        // منع تغيير الفندق عند التعديل
         $data['hotel_id'] = $hotelRoom->hotel_id;
 
-        // Debug: Log the data being updated
         \Log::info('Hotel Room Update Data:', $data);
         \Log::info('Original Room Data:', $hotelRoom->toArray());
 
         $hotelRoom->update($data);
 
-        // Debug: Log after update
         \Log::info('Room After Update:', $hotelRoom->fresh()->toArray());
 
         $this->handleMedia($request, $hotelRoom);
@@ -133,12 +131,11 @@ class HotelRoomController extends Controller
      */
     public function destroy(HotelRoom $hotelRoom): RedirectResponse
     {
-        // التحقق من أن المستخدم مسئول عن فندق هذه الغرفة
-        if (!auth()->user()->managesHotel($hotelRoom->hotel_id)) {
+        $hotel = Hotel::find($hotelRoom->hotel_id);
+        if (!$hotel || $hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لحذف هذه الغرفة.');
         }
 
-        // Delete all media files
         foreach ($hotelRoom->media as $media) {
             Storage::disk('public')->delete($media->file_path);
         }
@@ -156,8 +153,8 @@ class HotelRoomController extends Controller
      */
     public function clone(Request $request, HotelRoom $hotelRoom): RedirectResponse
     {
-        // التحقق من أن المستخدم مسئول عن فندق هذه الغرفة
-        if (!auth()->user()->managesHotel($hotelRoom->hotel_id)) {
+        $hotel = Hotel::find($hotelRoom->hotel_id);
+        if (!$hotel || $hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لاستنساخ هذه الغرفة.');
         }
 

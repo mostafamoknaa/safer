@@ -76,6 +76,27 @@
                 'disabled' => ! RouteFacade::has('hotel.hotel-rooms.index'),
             ],
             [
+                'route' => RouteFacade::has('hotel.buses.index') ? route('hotel.buses.index') : '#',
+                'icon' => 'fas fa-bus',
+                'active' => RouteFacade::has('hotel.buses.index') ? request()->routeIs('hotel.buses.*') : false,
+                'label' => 'الحافلات',
+                'disabled' => ! RouteFacade::has('hotel.buses.index'),
+            ],
+            [
+                'route' => RouteFacade::has('hotel.cars.index') ? route('hotel.cars.index') : '#',
+                'icon' => 'fas fa-car',
+                'active' => RouteFacade::has('hotel.cars.index') ? request()->routeIs('hotel.cars.*') : false,
+                'label' => 'السيارات',
+                'disabled' => ! RouteFacade::has('hotel.cars.index'),
+            ],
+            [
+                'route' => RouteFacade::has('hotel.trips.index') ? route('hotel.trips.index') : '#',
+                'icon' => 'fas fa-route',
+                'active' => RouteFacade::has('hotel.trips.index') ? request()->routeIs('hotel.trips.*') : false,
+                'label' => 'الرحلات',
+                'disabled' => ! RouteFacade::has('hotel.trips.index'),
+            ],
+            [
                 'route' => RouteFacade::has('hotel.conversations.index') ? route('hotel.conversations.index') : '#',
                 'icon' => 'fas fa-comments',
                 'active' => RouteFacade::has('hotel.conversations.index') ? request()->routeIs('hotel.conversations.*') : false,
