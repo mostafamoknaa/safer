@@ -23,8 +23,9 @@ class HotelController extends Controller
     public function create(): View
     {
         $provinces = Province::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
 
-        return view('admin.hotels.create', compact('provinces'));
+        return view('admin.hotels.create', compact('provinces', 'services'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -43,9 +44,10 @@ class HotelController extends Controller
     public function edit(Hotel $hotel): View
     {
         $provinces = Province::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $hotel->load('media');
 
-        return view('admin.hotels.edit', compact('hotel', 'provinces'));
+        return view('admin.hotels.edit', compact('hotel', 'provinces', 'services'));
     }
 
     public function show(Hotel $hotel): View
@@ -100,6 +102,7 @@ class HotelController extends Controller
             'about_info_ar' => ['nullable', 'string'],
             'about_info_en' => ['nullable', 'string'],
             'services' => ['nullable', 'array'],
+            'services.*' => ['exists:services,id'],
             'rate' => ['nullable', 'numeric', 'min:1', 'max:5'],
             'lat' => ['nullable', 'numeric'],
             'lang' => ['nullable', 'numeric'],

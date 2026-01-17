@@ -30,9 +30,10 @@ class HotelRoomController extends Controller
     public function create(Request $request): View
     {
         $hotels = Hotel::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $selectedHotelId = $request->get('hotel_id');
 
-        return view('admin.hotel-rooms.create', compact('hotels', 'selectedHotelId'));
+        return view('admin.hotel-rooms.create', compact('hotels', 'services', 'selectedHotelId'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,9 +52,10 @@ class HotelRoomController extends Controller
     public function edit(HotelRoom $hotelRoom): View
     {
         $hotels = Hotel::where('is_active', true)->orderBy('name_ar')->get();
+        $services = \App\Models\Service::where('is_active', true)->orderBy('name_ar')->get();
         $hotelRoom->load('media');
 
-        return view('admin.hotel-rooms.edit', compact('hotelRoom', 'hotels'));
+        return view('admin.hotel-rooms.edit', compact('hotelRoom', 'hotels', 'services'));
     }
 
     public function update(Request $request, HotelRoom $hotelRoom): RedirectResponse
@@ -145,6 +147,7 @@ class HotelRoomController extends Controller
             'checkin_time' => ['nullable', 'date_format:H:i'],
             'checkout_time' => ['nullable', 'date_format:H:i'],
             'services' => ['nullable', 'array'],
+            'services.*' => ['exists:services,id'],
             'blocked_slots' => ['nullable', 'array'],
             'blocked_slots.*.from_date' => ['nullable', 'date'],
             'blocked_slots.*.from_time' => ['nullable', 'date_format:H:i'],

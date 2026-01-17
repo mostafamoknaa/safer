@@ -76,6 +76,27 @@
                 'disabled' => ! RouteFacade::has('hotel.hotel-rooms.index'),
             ],
             [
+                'route' => RouteFacade::has('hotel.buses.index') ? route('hotel.buses.index') : '#',
+                'icon' => 'fas fa-bus',
+                'active' => RouteFacade::has('hotel.buses.index') ? request()->routeIs('hotel.buses.*') : false,
+                'label' => 'الحافلات',
+                'disabled' => ! RouteFacade::has('hotel.buses.index'),
+            ],
+            [
+                'route' => RouteFacade::has('hotel.cars.index') ? route('hotel.cars.index') : '#',
+                'icon' => 'fas fa-car',
+                'active' => RouteFacade::has('hotel.cars.index') ? request()->routeIs('hotel.cars.*') : false,
+                'label' => 'السيارات',
+                'disabled' => ! RouteFacade::has('hotel.cars.index'),
+            ],
+            [
+                'route' => RouteFacade::has('hotel.trips.index') ? route('hotel.trips.index') : '#',
+                'icon' => 'fas fa-route',
+                'active' => RouteFacade::has('hotel.trips.index') ? request()->routeIs('hotel.trips.*') : false,
+                'label' => 'الرحلات',
+                'disabled' => ! RouteFacade::has('hotel.trips.index'),
+            ],
+            [
                 'route' => RouteFacade::has('hotel.conversations.index') ? route('hotel.conversations.index') : '#',
                 'icon' => 'fas fa-comments',
                 'active' => RouteFacade::has('hotel.conversations.index') ? request()->routeIs('hotel.conversations.*') : false,
@@ -132,7 +153,7 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2" style="max-height: calc(100vh - 280px);">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>
@@ -198,7 +219,7 @@
                     </button>
                 </div>
 
-                <nav class="relative flex-1 overflow-y-auto min-h-0 px-4 py-6 space-y-2">
+                <nav class="relative flex-1 overflow-y-auto px-4 py-6 space-y-2" style="max-height: calc(100vh - 280px);">
                     <p class="px-3 mb-3 text-xs font-semibold uppercase tracking-widest text-slate-200/50">
                         {{ __('hotel.layout.nav_heading') }}
                     </p>

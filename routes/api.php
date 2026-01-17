@@ -99,14 +99,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'show']);
     Route::post('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'update']);
     Route::post('/user/hotels/{hotel}/clone', [\App\Http\Controllers\Api\UserHotelController::class, 'clone']);
+    Route::get('/user/hotels/{hotel}/bookings', [\App\Http\Controllers\Api\UserHotelController::class, 'getBookings']);
+    Route::get('/user/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\UserHotelController::class, 'getRooms']);
 
     // User Hotel Rooms
     Route::post('/user/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'store']);
     Route::post('/user/hotels/{hotel}/rooms/bulk-update', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'bulkUpdate']);
     Route::post('/user/hotels/{hotel}/rooms/mass-update', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'massUpdate']);
+    Route::post('/user/hotels/{hotel}/rooms/bulk-delete', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'bulkDelete']);
     Route::post('/user/rooms/{room}', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'update']);
     Route::delete('/user/rooms/{room}', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'destroy']);
     Route::post('/user/rooms/{room}/clone', [\App\Http\Controllers\Api\UserHotelRoomController::class, 'clone']);
+    Route::delete('/user/hotels/{hotel}', [\App\Http\Controllers\Api\UserHotelController::class, 'destroy']);
 
     // User Buses
     Route::apiResource('user/buses', \App\Http\Controllers\Api\UserBusController::class);

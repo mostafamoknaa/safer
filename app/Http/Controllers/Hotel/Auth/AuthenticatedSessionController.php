@@ -55,12 +55,14 @@ class AuthenticatedSessionController extends Controller
         }
 
         // التحقق من أن المستخدم لديه فنادق مسئول عنها
+        /*
         if (!$user->isHotelManager()) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => trans('hotel.auth.no_hotels'),
             ]);
         }
+        */
 
         $request->session()->regenerate();
 

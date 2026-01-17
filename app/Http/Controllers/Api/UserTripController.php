@@ -17,9 +17,32 @@ class UserTripController extends Controller
     public function index(): JsonResponse
     {
         $trips = Trip::where('user_id', Auth::id())
-            ->with('bus')
+            ->with(['bus', 'serviceRequests.user'])
             ->orderBy('trip_date', 'desc')
-            ->get();
+            ->get()
+            ->map(function($trip) {
+                return [
+                    'id' => $trip->id,
+                    'departure_location_ar' => $trip->departure_location_ar,
+                    'departure_location_en' => $trip->departure_location_en,
+                    'arrival_location_ar' => $trip->arrival_location_ar,
+                    'arrival_location_en' => $trip->arrival_location_en,
+                    'bus' => $trip->bus,
+                    'price' => (float) $trip->price,
+                    'trip_date' => $trip->trip_date,
+                    'trip_time' => $trip->trip_time,
+                    'duration_minutes' => $trip->duration_minutes,
+                    'is_active' => $trip->is_active,
+                    'bookings' => $trip->serviceRequests->map(fn($req) => [
+                        'id' => $req->id,
+                        'user' => $req->user,
+                        'passengers_count' => $req->passengers_count,
+                        'total_price' => (float) $req->total_price,
+                        'status' => $req->status,
+                        'created_at' => $req->created_at,
+                    ]),
+                ];
+            });
 
         return response()->json([
             'success' => true,
