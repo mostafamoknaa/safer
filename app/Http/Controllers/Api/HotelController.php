@@ -15,6 +15,49 @@ use Illuminate\Http\Request;
 
 class HotelController extends Controller
 {
+  
+      /**
+     * Get room details.
+     */
+    public function getRoomDetails(HotelRoom $room): JsonResponse
+    {
+        if (!$room->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => __('api.hotels.room_not_available'),
+            ], 404);
+        }
+
+        $room->load(['hotel', 'media']);
+
+        $images = $room->media->where('type', 'image')->map(function ($media) {
+            return [
+                'url' => $media->file_url,
+                'order' => $media->order_column,
+            ];
+        })->sortBy('order')->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $room->id,
+                'hotel_id' => $room->hotel_id,
+                'hotel_name' => app()->getLocale() === 'ar' ? $room->hotel->name_ar : $room->hotel->name_en,
+                'name' => $room->name ?? 'Room ' . $room->id,
+                'type' => $room->type ?? 'standard',
+                'price_per_night' => (float) $room->price_per_night,
+                'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
+                'service_fee' => (float) ($room->service_fee ?? 0),
+                'beds_count' => $room->beds_count,
+                'bathrooms_count' => $room->bathrooms_count,
+                'rooms_count' => $room->rooms_count,
+                'max_guests' => $room->max_guests ?? $room->beds_count * 2,
+                'description' => $room->description,
+                'amenities' => $room->amenities ? json_decode($room->amenities) : [],
+                'images' => $images,
+            ],
+        ]);
+    }
     /**
      * Get all provinces.
      */
@@ -49,6 +92,8 @@ class HotelController extends Controller
         $query = Hotel::with([
                 'media',
                 'province',
+                'managers',
+                'user',
                 'rooms' => function ($q) {
                     $q->where('is_active', true);
                 },
@@ -87,6 +132,33 @@ class HotelController extends Controller
                         'order' => $media->order_column,
                     ];
                 })->sortBy('order')->values();
+              
+              
+                $managers = collect();
+                
+                // Add owner as first manager
+                if ($hotel->user) {
+                    $managers->push([
+                        'id' => $hotel->user->id,
+                        'name' => $hotel->user->name,
+                        'email' => $hotel->user->email,
+                        'phone' => $hotel->user->phone,
+                        'image' => $hotel->user->image,
+                        'role' => 'owner',
+                    ]);
+                }
+                
+                // Add additional managers
+                $hotel->managers->each(function ($manager) use ($managers) {
+                    $managers->push([
+                        'id' => $manager->id,
+                        'name' => $manager->name,
+                        'email' => $manager->email,
+                        'phone' => $manager->phone,
+                        'image' => $manager->image,
+                        'role' => 'manager',
+                    ]);
+                });
 
                 return [
                     // 🔹 all hotel columns
@@ -94,8 +166,10 @@ class HotelController extends Controller
 
                     // 🔹 localized fields
                     'is_favorite' => in_array($hotel->id, $favoriteIds),
-                    'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
-                    'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                    'name_ar' => $hotel->name_ar,
+                    'name_en' => $hotel->name_en,
+                    'address_ar' => $hotel->address_ar,
+                    'address_en' => $hotel->address_en,
                     'about_info' => app()->getLocale() === 'ar'
                         ? $hotel->about_info_ar
                         : $hotel->about_info_en,
@@ -103,6 +177,7 @@ class HotelController extends Controller
                     // 🔹 extra computed data
                     'rooms_count' => $hotel->rooms->count(),
                     'images' => $images,
+                    'managers' => $managers,
                     'average_rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
                     'reviews_count' => $hotel->reviews_count,
                     'price' => ($minPrice !== null && $maxPrice !== null)
@@ -185,7 +260,6 @@ class HotelController extends Controller
                 'comment' => $review->comment,
                 'user' => [
                     'name' => $user->name,
-                    //return full path to user image or null
                     'photo' => $user->image ?? null,
                 ],
                 'created_at' => $review->created_at->format('Y-m-d'),
@@ -205,7 +279,7 @@ class HotelController extends Controller
             ], 404);
         }
 
-        $hotel->load(['province', 'media', 'managers', 'reviews.user', 'rooms' => function ($query) {
+        $hotel->load(['province', 'media', 'managers', 'user', 'reviews.user', 'rooms' => function ($query) {
             $query->where('is_active', true)->with('media');
         }]);
 
@@ -214,7 +288,6 @@ class HotelController extends Controller
         if ($user) {
             $isFavorite = Favorite::where('user_id', $user->id)
                 ->where('favoritable_id', $hotel->id)
-                ->where('favoritable_type', Hotel::class) // Ensure correct polymorphic type if applicable, or just id if unique scope (assuming favoritable_type is needed usually, but logic in list endpoint just used id array. sticking to list endpoint logic for consistency but safer to query directly)
                 ->exists(); 
 
              // Optimization: reuse the list logic which was:
@@ -252,6 +325,7 @@ class HotelController extends Controller
                 'beds_count' => $room->beds_count,
                 'bathrooms_count' => $room->bathrooms_count,
                 'rooms_count' => $room->rooms_count,
+                'services' => $room->services ?? [],
                 'is_available' => $isAvailable,
                 'rating' => 4.5, // Placeholder - implement room-specific ratings if needed
                 'images' => $images,
@@ -272,12 +346,30 @@ class HotelController extends Controller
             ];
         })->sortBy('order')->values();
 
-        $managers = $hotel->managers->map(function ($manager) {
-            return [
+        $managers = collect();
+        
+        // Add owner as first manager
+        if ($hotel->user) {
+            $managers->push([
+                'id' => $hotel->user->id,
+                'name' => $hotel->user->name,
+                'email' => $hotel->user->email,
+                'phone' => $hotel->user->phone,
+                'image' => $hotel->user->image,
+                'role' => 'owner',
+            ]);
+        }
+        
+        // Add additional managers
+        $hotel->managers->each(function ($manager) use ($managers) {
+            $managers->push([
                 'id' => $manager->id,
                 'name' => $manager->name,
-                'image' => $manager->image, // Assuming 'image' attribute exists on User model
-            ];
+                'email' => $manager->email,
+                'phone' => $manager->phone,
+                'image' => $manager->image,
+                'role' => 'manager',
+            ]);
         });
 
         $reviews = $hotel->reviews->take(10)->map(function ($review) {
@@ -297,8 +389,10 @@ class HotelController extends Controller
             'success' => true,
             'data' => [
                 'id' => $hotel->id,
-                'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
-                'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                'name_ar' => $hotel->name_ar,
+                'name_en' => $hotel->name_en,
+                'address_ar' => $hotel->address_ar,
+                'address_en' => $hotel->address_en,
                 'lat' => $hotel->lat ? (float) $hotel->lat : null,
                 'lang' => $hotel->lang ? (float) $hotel->lang : null,
                 'type' => $hotel->type,
@@ -386,6 +480,7 @@ class HotelController extends Controller
                     'beds_count' => $room->beds_count,
                     'bathrooms_count' => $room->bathrooms_count,
                     'rooms_count' => $room->rooms_count,
+                    'services' => $room->services ?? [],
                     'images' => $images,
                 ];
             });
@@ -464,8 +559,12 @@ class HotelController extends Controller
           }
           $query = Hotel::with([
                   'province',
+                  'media',
+                  'managers',
+                  'user',
+                  'reviews.user',
                   'rooms' => function ($q) {
-                      $q->where('is_active', true);
+                      $q->where('is_active', true)->with('media');
                   }
               ])
               ->where('is_active', true);
@@ -507,9 +606,7 @@ class HotelController extends Controller
 
           $hotels = $query->get()
               ->filter(function ($hotel) use ($request) {
-
                   if ($request->filled('min_price') || $request->filled('max_price')) {
-
                       $minPrice = $hotel->rooms->min('price_per_night');
                       $maxPrice = $hotel->rooms->max('price_per_night');
 
@@ -521,40 +618,118 @@ class HotelController extends Controller
                           return false;
                       }
                   }
-
                   return true;
               })->map(function ($hotel) use ($favoriteIds) {
-
                   $minPrice = $hotel->rooms->min('price_per_night');
                   $maxPrice = $hotel->rooms->max('price_per_night');
 
+                  $rooms = $hotel->rooms->map(function ($room) {
+                      $roomImages = $room->media->where('type', 'image')->map(function ($media) {
+                           return $media->file_url;
+                      })->values();
+
+                      $isAvailable = !$room->bookings()
+                          ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                          ->where('check_in_date', '<=', now()->addDays(30))
+                          ->where('check_out_date', '>=', now())
+                          ->exists();
+
+                      return [
+                          'id' => $room->id,
+                          'name' => $room->name ?? 'Room ' . $room->id,
+                          'type' => $room->type ?? 'standard',
+                          'price_per_night' => (float) $room->price_per_night,
+                          'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
+                          'service_fee' => (float) ($room->service_fee ?? 0),
+                          'beds_count' => $room->beds_count,
+                          'bathrooms_count' => $room->bathrooms_count,
+                          'rooms_count' => $room->rooms_count,
+                          'services' => $room->services ?? [],
+                          'is_available' => $isAvailable,
+                          'rating' => 4.5,
+                          'images' => $roomImages,
+                      ];
+                  });
+
+                  $images = $hotel->media->where('type', 'image')->map(function ($media) {
+                      return [
+                          'url' => $media->file_url,
+                          'order' => $media->order_column,
+                      ];
+                  })->sortBy('order')->values();
+
+                  $videos = $hotel->media->where('type', 'video')->map(function ($media) {
+                      return [
+                          'url' => $media->file_url,
+                          'order' => $media->order_column,
+                      ];
+                  })->sortBy('order')->values();
+
+                  $managers = collect();
+                  if ($hotel->user) {
+                      $managers->push([
+                          'id' => $hotel->user->id,
+                          'name' => $hotel->user->name,
+                          'email' => $hotel->user->email,
+                          'phone' => $hotel->user->phone,
+                          'image' => $hotel->user->image,
+                          'role' => 'owner',
+                      ]);
+                  }
+                  $hotel->managers->each(function ($manager) use ($managers) {
+                      $managers->push([
+                          'id' => $manager->id,
+                          'name' => $manager->name,
+                          'email' => $manager->email,
+                          'phone' => $manager->phone,
+                          'image' => $manager->image,
+                          'role' => 'manager',
+                      ]);
+                  });
+
+                  $reviews = $hotel->reviews->take(10)->map(function ($review) {
+                      return [
+                          'id' => $review->id,
+                          'user' => [
+                              'name' => $review->user->name,
+                              'photo' => $review->user->image ?? null,
+                          ],
+                          'rating' => $review->rating,
+                          'comment' => $review->comment,
+                          'created_at' => $review->created_at->format('Y-m-d'),
+                      ];
+                  });
+
                   return [
                       'id' => $hotel->id,
-                      'is_favorite' => in_array($hotel->id, $favoriteIds),
-                      'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
-                      'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                      'name_ar' => $hotel->name_ar,
+                      'name_en' => $hotel->name_en,
+                      'address_ar' => $hotel->address_ar,
+                      'address_en' => $hotel->address_en,
                       'lat' => $hotel->lat ? (float) $hotel->lat : null,
                       'lang' => $hotel->lang ? (float) $hotel->lang : null,
                       'type' => $hotel->type,
-                      'rating' => $hotel->rate ? (float) $hotel->rate : null,
+                      'rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
+                      'reviews_count' => $hotel->reviews_count,
                       'services' => $hotel->services ?? [],
+                      'is_favorite' => in_array($hotel->id, $favoriteIds),
                       'province' => $hotel->province ? [
                           'id' => $hotel->province->id,
-                          'name' => app()->getLocale() === 'ar'
-                              ? $hotel->province->name_ar
-                              : $hotel->province->name_en,
+                          'name' => app()->getLocale() === 'ar' ? $hotel->province->name_ar : $hotel->province->name_en,
                       ] : null,
                       'website_url' => $hotel->website_url,
-                      'about_info' => app()->getLocale() === 'ar'
-                          ? $hotel->about_info_ar
-                          : $hotel->about_info_en,
-                      'rooms_count' => $hotel->rooms->count(),
+                      'about_info' => app()->getLocale() === 'ar' ? $hotel->about_info_ar : $hotel->about_info_en,
                       'price' => ($minPrice !== null && $maxPrice !== null)
                           ? [
                               'min' => (float) $minPrice,
                               'max' => (float) $maxPrice,
                           ]
                           : null,
+                      'managers' => $managers,
+                      'images' => $images,
+                      'videos' => $videos,
+                      'rooms' => $rooms,
+                      'reviews' => $reviews,
                   ];
               })
               ->values();
@@ -653,49 +828,6 @@ class HotelController extends Controller
         return response()->json([
             'success' => true,
             'data' => $hotels,
-        ]);
-    }
-
-    /**
-     * Get room details.
-     */
-    public function getRoomDetails(HotelRoom $room): JsonResponse
-    {
-        if (!$room->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => __('api.hotels.room_not_available'),
-            ], 404);
-        }
-
-        $room->load(['hotel', 'media']);
-
-        $images = $room->media->where('type', 'image')->map(function ($media) {
-            return [
-                'url' => $media->file_url,
-                'order' => $media->order_column,
-            ];
-        })->sortBy('order')->values();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $room->id,
-                'hotel_id' => $room->hotel_id,
-                'hotel_name' => app()->getLocale() === 'ar' ? $room->hotel->name_ar : $room->hotel->name_en,
-                'name' => $room->name ?? 'Room ' . $room->id,
-                'type' => $room->type ?? 'standard',
-                'price_per_night' => (float) $room->price_per_night,
-                'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
-                'service_fee' => (float) ($room->service_fee ?? 0),
-                'beds_count' => $room->beds_count,
-                'bathrooms_count' => $room->bathrooms_count,
-                'rooms_count' => $room->rooms_count,
-                'max_guests' => $room->max_guests ?? $room->beds_count * 2,
-                'description' => $room->description,
-                'amenities' => $room->amenities ? json_decode($room->amenities) : [],
-                'images' => $images,
-            ],
         ]);
     }
 

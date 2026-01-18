@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingRoom;
 use App\Models\Hotel;
-use App\Models\HotelRoom;
+use App\Models\EventTicket;
+use App\Models\Event;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,8 +20,10 @@ class BookingController extends Controller
      */
     public function getUserBookings(Request $request): JsonResponse
     {
-        $query = Booking::with(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media'])
-            ->where('user_id', Auth::id());
+        $query = Booking::with([
+            'hotel', 'hotel.province', 'hotel.media',
+            'bookedRooms.room', 'bookedRooms.room.media'
+        ])->where('user_id', Auth::id());
 
         // Filter by status
         if ($request->filled('status')) {
@@ -43,37 +46,51 @@ class BookingController extends Controller
                         ];
                     })->sortBy('order')->take(3)->values() : [];
 
-                $roomImages = $booking->room && $booking->room->media ? 
-                    $booking->room->media->where('type', 'image')->map(function ($media) {
-                        return [
-                            'url' => $media->file_url,
-                            'order' => $media->order_column,
-                        ];
-                    })->sortBy('order')->values() : [];
+                $rooms = $booking->bookedRooms->map(function ($bookedRoom) {
+                    $roomImages = $bookedRoom->room && $bookedRoom->room->media ? 
+                        $bookedRoom->room->media->where('type', 'image')->map(function ($media) {
+                            return [
+                                'url' => $media->file_url,
+                                'order' => $media->order_column,
+                            ];
+                        })->sortBy('order')->values() : [];
+
+                    return [
+                        'id' => $bookedRoom->room->id,
+                        'name' => $bookedRoom->room->name ?? 'Room ' . $bookedRoom->room->id,
+                        'type' => $bookedRoom->room->type ?? 'standard',
+                        'price_per_night' => (float) $bookedRoom->room->price_per_night,
+                        'cleaning_fee' => (float) ($bookedRoom->room->cleaning_fee ?? 0),
+                        'service_fee' => (float) ($bookedRoom->room->service_fee ?? 0),
+                        'beds_count' => $bookedRoom->room->beds_count,
+                        'bathrooms_count' => $bookedRoom->room->bathrooms_count,
+                        'rooms_count' => $bookedRoom->room->rooms_count,
+                        'images' => $roomImages,
+                    ];
+                });
 
                 return [
                     'id' => $booking->id,
                     'booking_reference' => $booking->booking_reference,
                     'hotel' => $booking->hotel ? [
                         'id' => $booking->hotel->id,
-                        'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
+                        'name-ar' =>$booking->hotel->name_ar,
+                        'name_en' => $booking->hotel->name_en,
+                        'address_ar' => $booking->hotel->address_ar,
+                        'address_en' =>$booking->hotel->address_en,
+                        'phone' => $booking->hotel->phone,
+                        'phone_2' => $booking->hotel->phone_2,
+                        'website_url' => $booking->hotel->website_url,
+                        'rate' => $booking->hotel->rate,
+                        'type' => $booking->hotel->type,
+                        'services' => $booking->hotel->services,
                         'images' => $hotelImages,
                         'province' => $booking->hotel->province ? [
+                            'id' => $booking->hotel->province->id,
                             'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                         ] : null,
                     ] : null,
-                    'room' => $booking->room ? [
-                        'id' => $booking->room->id,
-                        'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
-                        'type' => $booking->room->type ?? 'standard',
-                        'price_per_night' => (float) $booking->room->price_per_night,
-                        'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
-                        'service_fee' => (float) ($booking->room->service_fee ?? 0),
-                        'beds_count' => $booking->room->beds_count,
-                        'bathrooms_count' => $booking->room->bathrooms_count,
-                        'rooms_count' => $booking->room->rooms_count,
-                        'images' => $roomImages,
-                    ] : null,
+                    'rooms' => $rooms,
                     'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                     'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
                     'nights_count' => $booking->nights_count,
@@ -94,9 +111,58 @@ class BookingController extends Controller
         ]);
     }
 
-    /**
-     * Get booking details.
-     */
+        /**
+         * Get user event bookings.
+         */
+        public function getUserEventBookings(Request $request): JsonResponse
+        {
+            $query = EventTicket::with(['event', 'event.user'])
+                ->where('user_id', Auth::id());
+
+            // Filter by status
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $eventBookings = $query->orderByDesc('created_at')
+                ->get()
+                ->map(function ($ticket) {
+                    return [
+                        'id' => $ticket->id,
+                        'ticket_reference' => $ticket->ticket_reference,
+                        'tickets_count' => $ticket->tickets_count,
+                        'total_price' => (float) $ticket->total_price,
+                        'status' => $ticket->status,
+                        'notes' => $ticket->notes,
+                        'event' => $ticket->event ? [
+                            'id' => $ticket->event->id,
+                            'name_ar' => $ticket->event->name_ar,
+                            'name_en' => $ticket->event->name_en,
+                            'location_ar' => $ticket->event->location_ar,
+                            'location_en' => $ticket->event->location_en,
+                            'location_url' => $ticket->event->location_url,
+                            'event_date' => $ticket->event->event_date ? $ticket->event->event_date->format('Y-m-d H:i:s') : null,
+                            'price_per_person' => (float) $ticket->event->price_per_person,
+                            'duration' => $ticket->event->duration,
+                            'phone' => $ticket->event->phone,
+                            'activity_type' => $ticket->event->activity_type,
+                            'activity_images' => $ticket->event->activity_images,
+                            'organizer' => $ticket->event->user ? [
+                                'id' => $ticket->event->user->id,
+                                'name' => $ticket->event->user->name,
+                                'phone' => $ticket->event->user->phone,
+                                'image' => $ticket->event->user->image,
+                            ] : null,
+                        ] : null,
+                        'created_at' => $ticket->created_at->format('Y-m-d H:i:s'),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $eventBookings,
+            ]);
+        }
     public function getBookingDetails(Booking $booking): JsonResponse
     {
         if ($booking->user_id !== Auth::id()) {
@@ -106,14 +172,10 @@ class BookingController extends Controller
             ], 403);
         }
 
-        $booking->load(['hotel', 'hotel.province', 'hotel.media', 'room', 'room.media', 'payments']);
-
-        $roomImages = $booking->room && $booking->room->media ? $booking->room->media->where('type', 'image')->map(function ($media) {
-            return [
-                'url' => $media->file_url,
-                'order' => $media->order_column,
-            ];
-        })->sortBy('order')->values() : [];
+        $booking->load([
+            'hotel', 'hotel.province', 'hotel.media', 
+            'bookedRooms.room', 'bookedRooms.room.media', 'payments'
+        ]);
 
         $hotelImages = $booking->hotel && $booking->hotel->media ? $booking->hotel->media->where('type', 'image')->map(function ($media) {
             return [
@@ -121,6 +183,29 @@ class BookingController extends Controller
                 'order' => $media->order_column,
             ];
         })->sortBy('order')->values() : [];
+
+        $rooms = $booking->bookedRooms->map(function ($bookedRoom) {
+            $roomImages = $bookedRoom->room && $bookedRoom->room->media ? 
+                $bookedRoom->room->media->where('type', 'image')->map(function ($media) {
+                    return [
+                        'url' => $media->file_url,
+                        'order' => $media->order_column,
+                    ];
+                })->sortBy('order')->values() : [];
+
+            return [
+                'id' => $bookedRoom->room->id,
+                'name' => $bookedRoom->room->name ?? 'Room ' . $bookedRoom->room->id,
+                'type' => $bookedRoom->room->type ?? 'standard',
+                'price_per_night' => (float) $bookedRoom->room->price_per_night,
+                'cleaning_fee' => (float) ($bookedRoom->room->cleaning_fee ?? 0),
+                'service_fee' => (float) ($bookedRoom->room->service_fee ?? 0),
+                'beds_count' => $bookedRoom->room->beds_count,
+                'bathrooms_count' => $bookedRoom->room->bathrooms_count,
+                'rooms_count' => $bookedRoom->room->rooms_count,
+                'images' => $roomImages,
+            ];
+        });
 
         $payments = $booking->payments->map(function ($payment) {
             return [
@@ -141,27 +226,24 @@ class BookingController extends Controller
                 'booking_reference' => $booking->booking_reference,
                 'hotel' => $booking->hotel ? [
                     'id' => $booking->hotel->id,
-                    'name' => app()->getLocale() === 'ar' ? $booking->hotel->name_ar : $booking->hotel->name_en,
-                    'address' => app()->getLocale() === 'ar' ? $booking->hotel->address_ar : $booking->hotel->address_en,
+                    'name_ar' => $booking->hotel->name_ar,
+                    'name_en' => $booking->hotel->name_en,
+                    'address_ar' => $booking->hotel->address_ar,
+                    'address_en' => $booking->hotel->address_en,
+                    'phone' => $booking->hotel->phone,
+                    'phone_2' => $booking->hotel->phone_2,
+                    'website_url' => $booking->hotel->website_url,
+                    'rate' => $booking->hotel->rate,
+                    'type' => $booking->hotel->type,
+                    'services' => $booking->hotel->services,
                     'images' => $hotelImages,
                     'province' => $booking->hotel->province ? [
                         'id' => $booking->hotel->province->id,
-                        'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
+                        'name_ar' => $booking->hotel->province->name_ar,
+                        'name_en' => $booking->hotel->province->name_en,
                     ] : null,
-                    'website_url' => $booking->hotel->website_url,
                 ] : null,
-                'room' => $booking->room ? [
-                    'id' => $booking->room->id,
-                    'name' => $booking->room->name ?? 'Room ' . $booking->room->id,
-                    'type' => $booking->room->type ?? 'standard',
-                    'price_per_night' => (float) $booking->room->price_per_night,
-                    'cleaning_fee' => (float) ($booking->room->cleaning_fee ?? 0),
-                    'service_fee' => (float) ($booking->room->service_fee ?? 0),
-                    'beds_count' => $booking->room->beds_count,
-                    'bathrooms_count' => $booking->room->bathrooms_count,
-                    'rooms_count' => $booking->room->rooms_count,
-                    'images' => $roomImages,
-                ] : null,
+                'rooms' => $rooms,
                 'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                 'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
                 'nights_count' => $booking->nights_count,

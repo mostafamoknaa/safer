@@ -45,6 +45,7 @@ class LoginController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'phone' => $user->phone,
+                        'image' => $user->image,
                     ],
                     'token' => $token,
                     'token_type' => 'Bearer',

@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Activities routes
     Route::get('/user/activities', [\App\Http\Controllers\Api\UserActivityController::class, 'getUserActivities']);
+    Route::get('/user/my-activities', [\App\Http\Controllers\Api\BookingController::class, 'getUserEventBookings']);
     Route::post('/user/activities', [\App\Http\Controllers\Api\UserActivityController::class, 'store']);
     Route::post('/user/activities/{activity}', [\App\Http\Controllers\Api\UserActivityController::class, 'update']);
 
@@ -154,7 +155,7 @@ Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class,
 Route::get('/provinces', [\App\Http\Controllers\Api\HotelController::class, 'getProvinces']);
 Route::get('/hotels-countries', [\App\Http\Controllers\Api\HotelController::class, 'getCountries']);
 Route::get('/hotels/nearest', [\App\Http\Controllers\Api\HotelController::class, 'getNearestHotels']);
-Route::get('/hotels/filter', [\App\Http\Controllers\Api\HotelController::class, 'filterHotels']);
+Route::get('/hotels-filter', [\App\Http\Controllers\Api\HotelController::class, 'filterHotels']);
 Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
 Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
 Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
