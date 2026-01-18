@@ -11,11 +11,32 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
 
+// Public Hotel Routes
+Route::get('/provinces', [\App\Http\Controllers\Api\HotelController::class, 'getProvinces']);
+Route::get('/hotels-countries', [\App\Http\Controllers\Api\HotelController::class, 'getCountries']);
+Route::get('/hotels/price-stats', [\App\Http\Controllers\Api\HotelController::class, 'getPriceStats']);
+Route::get('/hotels/nearest', [\App\Http\Controllers\Api\HotelController::class, 'getNearestHotels']);
+Route::get('/hotels/filter', [\App\Http\Controllers\Api\HotelController::class, 'filterHotels']);
+Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
+Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
+Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
+
+// Public Event Routes
+Route::get('/events', [\App\Http\Controllers\Api\EventController::class, 'getEvents']);
+Route::get('/events/nearby', [\App\Http\Controllers\Api\EventController::class, 'getNearbyEvents']);
+Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class, 'getEventDetails']);
+
+// Public Service Routes
+Route::get('/services/buses', [\App\Http\Controllers\Api\ServiceController::class, 'getBuses']);
+Route::get('/services/trips', [\App\Http\Controllers\Api\ServiceController::class, 'getTrips']);
+Route::get('/services/trips/{trip}', [\App\Http\Controllers\Api\ServiceController::class, 'getTripDetails']);
+Route::get('/services/private-cars', [\App\Http\Controllers\Api\ServiceController::class, 'getPrivateCars']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout']);
     Route::get('/me', [LoginController::class, 'me']);
-    Route::post('/update-profile' , [LoginController::class, 'updateProfile']);
+    Route::post('/update-profile', [LoginController::class, 'updateProfile']);
 
     Route::get('/user', function (Request $request) {
         return response()->json([
@@ -57,10 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class, 'getEventDetails']);
     Route::post('/events/purchase', [\App\Http\Controllers\Api\EventController::class, 'purchaseTickets']);
 
-    // Hotels routes
-    Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
-    Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
-    Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
+    // Protected Hotels routes (that require auth like rating/review)
     Route::get('/rooms/{room}', [\App\Http\Controllers\Api\HotelController::class, 'getRoomDetails']);
     Route::post('/hotels/{hotel}/rate', [\App\Http\Controllers\Api\HotelController::class, 'addRating']);
     Route::post('/hotels/{hotel}/review', [\App\Http\Controllers\Api\HotelController::class, 'addReview']);
@@ -136,24 +154,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/vouchers/validate', [\App\Http\Controllers\Api\VoucherController::class, 'validateVoucher']);
     Route::post('/vouchers/insert-samples', [\App\Http\Controllers\Api\VoucherController::class, 'insertSampleVouchers']);
 });
-
-// Public routes for services and events
-Route::get('/services/buses', [\App\Http\Controllers\Api\ServiceController::class, 'getBuses']);
-Route::get('/services/trips', [\App\Http\Controllers\Api\ServiceController::class, 'getTrips']);
-Route::get('/services/trips/{trip}', [\App\Http\Controllers\Api\ServiceController::class, 'getTripDetails']);
-Route::get('/services/private-cars', [\App\Http\Controllers\Api\ServiceController::class, 'getPrivateCars']);
-Route::get('/events', [\App\Http\Controllers\Api\EventController::class, 'getEvents']);
-Route::get('/events/nearby', [\App\Http\Controllers\Api\EventController::class, 'getNearbyEvents']);
-Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class, 'getEventDetails']);
-
-// Public routes for hotels and provinces
-Route::get('/provinces', [\App\Http\Controllers\Api\HotelController::class, 'getProvinces']);
-Route::get('/hotels-countries', [\App\Http\Controllers\Api\HotelController::class, 'getCountries']);
-Route::get('/hotels/nearest', [\App\Http\Controllers\Api\HotelController::class, 'getNearestHotels']);
-Route::get('/hotels/filter', [\App\Http\Controllers\Api\HotelController::class, 'filterHotels']);
-Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
-Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
-Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
 
 // Explore places
 Route::get('/explore/popular', [\App\Http\Controllers\Api\ExploreController::class, 'getPopularPlaces']);

@@ -13,9 +13,14 @@ class BusBookingController extends Controller
     /**
      * Display bus search form.
      */
-    public function search()
+    public function search(Request $request)
     {
-        return view('web.buses.search');
+        return view('web.buses.search', [
+            'departure_location' => $request->query('departure_location'),
+            'arrival_location' => $request->query('arrival_location'),
+            'trip_date' => $request->query('trip_date'),
+            'number_of_passengers' => $request->query('number_of_passengers', 1),
+        ]);
     }
 
     /**

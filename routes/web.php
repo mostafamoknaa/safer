@@ -43,7 +43,7 @@ Route::post('/contact-us', [ContactController::class, 'store'])->name('web.conta
 
 // Bus Booking Routes
 Route::get('/buses/search', [\App\Http\Controllers\Web\BusBookingController::class, 'search'])->name('web.buses.search');
-Route::post('/buses/search', [\App\Http\Controllers\Web\BusBookingController::class, 'searchResults'])->name('web.buses.search.results');
+Route::match(['get', 'post'], '/buses/search-results', [\App\Http\Controllers\Web\BusBookingController::class, 'searchResults'])->name('web.buses.search.results');
 Route::get('/buses/{trip}/select-seat', [\App\Http\Controllers\Web\BusBookingController::class, 'selectSeat'])->name('web.buses.select-seat');
 Route::post('/buses/{trip}/confirm-seat', [\App\Http\Controllers\Web\BusBookingController::class, 'confirmSeat'])->name('web.buses.confirm-seat')->middleware('auth');
 Route::get('/buses/payment', [\App\Http\Controllers\Web\BusBookingController::class, 'payment'])->name('web.buses.payment')->middleware('auth');
@@ -108,6 +108,14 @@ Route::middleware(['auth'])->group(function () {
         \App\Http\Controllers\Web\BookingController::class,
         'cancel'
     ])->name('web.bookings.cancel');
+    Route::get('/my-service-requests/{id}', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'serviceShow'
+    ])->name('web.bookings.service_show');
+    Route::get('/my-event-tickets/{id}', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'eventTicketShow'
+    ])->name('web.bookings.event_ticket_show');
 
     // Favorites
     Route::get('/favorites', [\App\Http\Controllers\Web\FavoriteController::class, 'index'])->name('web.favorites.index');

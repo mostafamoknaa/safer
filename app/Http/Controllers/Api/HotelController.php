@@ -47,13 +47,13 @@ class HotelController extends Controller
             $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
         }
         $query = Hotel::with([
-                'media',
-                'province',
-                'rooms' => function ($q) {
-                    $q->where('is_active', true);
-                },
-                'reviews.user'
-            ])
+            'media',
+            'province',
+            'rooms' => function ($q) {
+                $q->where('is_active', true);
+            },
+            'reviews.user'
+        ])
             ->where('is_active', true);
 
         // Filter by province
@@ -66,7 +66,7 @@ class HotelController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name_ar', 'like', "%{$search}%")
-                  ->orWhere('name_en', 'like', "%{$search}%");
+                    ->orWhere('name_en', 'like', "%{$search}%");
             });
         }
 
@@ -138,8 +138,8 @@ class HotelController extends Controller
             'success' => true,
             'message' => __('api.hotels.rating_added'),
             'data' => [
-                 'id' => $hotel->id,
-                 'rating' => (float) $hotel->rate
+                'id' => $hotel->id,
+                'rating' => (float) $hotel->rate
             ]
         ]);
     }
@@ -205,9 +205,15 @@ class HotelController extends Controller
             ], 404);
         }
 
-        $hotel->load(['province', 'media', 'managers', 'reviews.user', 'rooms' => function ($query) {
-            $query->where('is_active', true)->with('media');
-        }]);
+        $hotel->load([
+            'province',
+            'media',
+            'managers',
+            'reviews.user',
+            'rooms' => function ($query) {
+                $query->where('is_active', true)->with('media');
+            }
+        ]);
 
         $user = auth('sanctum')->user();
         $isFavorite = false;
@@ -215,14 +221,14 @@ class HotelController extends Controller
             $isFavorite = Favorite::where('user_id', $user->id)
                 ->where('favoritable_id', $hotel->id)
                 ->where('favoritable_type', Hotel::class) // Ensure correct polymorphic type if applicable, or just id if unique scope (assuming favoritable_type is needed usually, but logic in list endpoint just used id array. sticking to list endpoint logic for consistency but safer to query directly)
-                ->exists(); 
+                ->exists();
 
-             // Optimization: reuse the list logic which was:
-             // $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
+            // Optimization: reuse the list logic which was:
+            // $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
         }
         // Let's stick to the direct query for single item efficiency
         if ($user) {
-             $isFavorite = Favorite::where('user_id', $user->id)
+            $isFavorite = Favorite::where('user_id', $user->id)
                 ->where('favoritable_id', $hotel->id)
                 ->exists();
         }
@@ -232,7 +238,7 @@ class HotelController extends Controller
 
         $rooms = $hotel->rooms->map(function ($room) {
             $images = $room->media->where('type', 'image')->map(function ($media) {
-                 return $media->file_url;
+                return $media->file_url;
             })->values();
 
             // Check availability (simplified - you may want more complex logic)
@@ -313,11 +319,11 @@ class HotelController extends Controller
                 'website_url' => $hotel->website_url,
                 'about_info' => app()->getLocale() === 'ar' ? $hotel->about_info_ar : $hotel->about_info_en,
                 'price' => ($minPrice !== null && $maxPrice !== null)
-                        ? [
-                            'min' => (float) $minPrice,
-                            'max' => (float) $maxPrice,
-                        ]
-                        : null,
+                    ? [
+                        'min' => (float) $minPrice,
+                        'max' => (float) $maxPrice,
+                    ]
+                    : null,
                 'managers' => $managers,
                 'images' => $images,
                 'videos' => $videos,
@@ -369,7 +375,7 @@ class HotelController extends Controller
                                 ->where('check_out_date', '>=', $checkOut);
                         });
                 })
-                ->whereIn('status', ['pending', 'confirmed', 'checked_in']);
+                    ->whereIn('status', ['pending', 'confirmed', 'checked_in']);
             });
         }
 
@@ -450,119 +456,119 @@ class HotelController extends Controller
             ],
         ]);
     }
-  
-   /**
+
+    /**
      * Filter and search hotels with advanced options.
      */
-      public function filterHotels(Request $request): JsonResponse
-      {
-        
-          $user = auth('sanctum')->user();
-          $favoriteIds = [];
-          if ($user) {
-              $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
-          }
-          $query = Hotel::with([
-                  'province',
-                  'rooms' => function ($q) {
-                      $q->where('is_active', true);
-                  }
-              ])
-              ->where('is_active', true);
+    public function filterHotels(Request $request): JsonResponse
+    {
 
-          // Filter by country
-          if ($request->filled('country')) {
-              $query->where('country', $request->country);
-          }
+        $user = auth('sanctum')->user();
+        $favoriteIds = [];
+        if ($user) {
+            $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
+        }
+        $query = Hotel::with([
+            'province',
+            'rooms' => function ($q) {
+                $q->where('is_active', true);
+            }
+        ])
+            ->where('is_active', true);
 
-          // Filter by rating
-          if ($request->filled('min_rating')) {
-              $query->where('rate', '>=', $request->min_rating);
-          }
+        // Filter by country
+        if ($request->filled('country')) {
+            $query->where('country', $request->country);
+        }
 
-          // Filter by type
-          if ($request->filled('type')) {
-              $query->where('type', $request->type);
-          }
+        // Filter by rating
+        if ($request->filled('min_rating')) {
+            $query->where('rate', '>=', $request->min_rating);
+        }
 
-          // Filter by services
-          if ($request->filled('services')) {
-              $services = is_array($request->services)
-                  ? $request->services
-                  : [$request->services];
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
 
-              foreach ($services as $service) {
-                  $query->whereJsonContains('services', $service);
-              }
-          }
+        // Filter by services
+        if ($request->filled('services')) {
+            $services = is_array($request->services)
+                ? $request->services
+                : [$request->services];
 
-          // Search
-          if ($request->filled('search')) {
-              $search = $request->search;
-              $query->where(function ($q) use ($search) {
-                  $q->where('name_ar', 'like', "%{$search}%")
+            foreach ($services as $service) {
+                $query->whereJsonContains('services', $service);
+            }
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name_ar', 'like', "%{$search}%")
                     ->orWhere('name_en', 'like', "%{$search}%");
-              });
-          }
+            });
+        }
 
-          $hotels = $query->get()
-              ->filter(function ($hotel) use ($request) {
+        $hotels = $query->get()
+            ->filter(function ($hotel) use ($request) {
 
-                  if ($request->filled('min_price') || $request->filled('max_price')) {
+                if ($request->filled('min_price') || $request->filled('max_price')) {
 
-                      $minPrice = $hotel->rooms->min('price_per_night');
-                      $maxPrice = $hotel->rooms->max('price_per_night');
+                    $minPrice = $hotel->rooms->min('price_per_night');
+                    $maxPrice = $hotel->rooms->max('price_per_night');
 
-                      if ($request->filled('min_price') && $maxPrice < $request->min_price) {
-                          return false;
-                      }
+                    if ($request->filled('min_price') && $maxPrice < $request->min_price) {
+                        return false;
+                    }
 
-                      if ($request->filled('max_price') && $minPrice > $request->max_price) {
-                          return false;
-                      }
-                  }
+                    if ($request->filled('max_price') && $minPrice > $request->max_price) {
+                        return false;
+                    }
+                }
 
-                  return true;
-              })->map(function ($hotel) use ($favoriteIds) {
+                return true;
+            })->map(function ($hotel) use ($favoriteIds) {
 
-                  $minPrice = $hotel->rooms->min('price_per_night');
-                  $maxPrice = $hotel->rooms->max('price_per_night');
+                $minPrice = $hotel->rooms->min('price_per_night');
+                $maxPrice = $hotel->rooms->max('price_per_night');
 
-                  return [
-                      'id' => $hotel->id,
-                      'is_favorite' => in_array($hotel->id, $favoriteIds),
-                      'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
-                      'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
-                      'lat' => $hotel->lat ? (float) $hotel->lat : null,
-                      'lang' => $hotel->lang ? (float) $hotel->lang : null,
-                      'type' => $hotel->type,
-                      'rating' => $hotel->rate ? (float) $hotel->rate : null,
-                      'services' => $hotel->services ?? [],
-                      'province' => $hotel->province ? [
-                          'id' => $hotel->province->id,
-                          'name' => app()->getLocale() === 'ar'
-                              ? $hotel->province->name_ar
-                              : $hotel->province->name_en,
-                      ] : null,
-                      'website_url' => $hotel->website_url,
-                      'about_info' => app()->getLocale() === 'ar'
-                          ? $hotel->about_info_ar
-                          : $hotel->about_info_en,
-                      'rooms_count' => $hotel->rooms->count(),
-                      'price' => ($minPrice !== null && $maxPrice !== null)
-                          ? [
-                              'min' => (float) $minPrice,
-                              'max' => (float) $maxPrice,
-                          ]
-                          : null,
-                  ];
-              })
-              ->values();
+                return [
+                    'id' => $hotel->id,
+                    'is_favorite' => in_array($hotel->id, $favoriteIds),
+                    'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
+                    'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                    'lat' => $hotel->lat ? (float) $hotel->lat : null,
+                    'lang' => $hotel->lang ? (float) $hotel->lang : null,
+                    'type' => $hotel->type,
+                    'rating' => $hotel->rate ? (float) $hotel->rate : null,
+                    'services' => $hotel->services ?? [],
+                    'province' => $hotel->province ? [
+                        'id' => $hotel->province->id,
+                        'name' => app()->getLocale() === 'ar'
+                            ? $hotel->province->name_ar
+                            : $hotel->province->name_en,
+                    ] : null,
+                    'website_url' => $hotel->website_url,
+                    'about_info' => app()->getLocale() === 'ar'
+                        ? $hotel->about_info_ar
+                        : $hotel->about_info_en,
+                    'rooms_count' => $hotel->rooms->count(),
+                    'price' => ($minPrice !== null && $maxPrice !== null)
+                        ? [
+                            'min' => (float) $minPrice,
+                            'max' => (float) $maxPrice,
+                        ]
+                        : null,
+                ];
+            })
+            ->values();
 
-          return response()->json([
-              'success' => true,
-              'data' => $hotels,
-          ]);
+        return response()->json([
+            'success' => true,
+            'data' => $hotels,
+        ]);
     }
 
     /**
@@ -572,11 +578,11 @@ class HotelController extends Controller
     {
         $request->validate([
             'lat' => 'required|numeric',
-            'lang' => 'required|numeric',
+            'lng' => 'required|numeric',
         ]);
 
         $lat = $request->lat;
-        $lang = $request->lang;
+        $lng = $request->lng;
 
         $user = auth('sanctum')->user();
         $favoriteIds = [];
@@ -585,13 +591,13 @@ class HotelController extends Controller
         }
 
         $hotels = Hotel::with([
-                'media',
-                'province',
-                'rooms' => function ($q) {
-                    $q->where('is_active', true);
-                },
-                'reviews.user'
-            ])
+            'media',
+            'province',
+            'rooms' => function ($q) {
+                $q->where('is_active', true);
+            },
+            'reviews.user'
+        ])
             ->select('hotels.*')
             ->selectRaw(
                 '( 6371 * acos( cos( radians(?) ) *
@@ -599,9 +605,9 @@ class HotelController extends Controller
                   cos( radians( lang ) - radians(?) ) +
                   sin( radians(?) ) *
                   sin( radians( lat ) ) ) ) AS distance',
-                [$lat, $lang, $lat]
+                [$lat, $lng, $lat]
             )
-            ->having('distance', '<=', 20)
+            ->having('distance', '<=', 50)
             ->when($request->filled('type'), function ($q) use ($request) {
                 return $q->where('type', $request->type);
             })
@@ -699,7 +705,7 @@ class HotelController extends Controller
         ]);
     }
 
-    
+
     /**
      * Get all countries where hotels are located.
      */
@@ -713,6 +719,32 @@ class HotelController extends Controller
         return response()->json([
             'success' => true,
             'data' => $countries,
+        ]);
+    }
+
+    /**
+     * Get price statistics for hotels.
+     */
+    public function getPriceStats(): JsonResponse
+    {
+        $minPrice = HotelRoom::where('is_active', true)->min('price_per_night') ?? 0;
+        $maxPrice = HotelRoom::where('is_active', true)->max('price_per_night') ?? 5000;
+
+        // Create some logical ranges
+        $ranges = [
+            ['label' => '0 - 500 ج.م', 'min' => 0, 'max' => 500],
+            ['label' => '500 - 1000 ج.م', 'min' => 500, 'max' => 1000],
+            ['label' => '1000 - 2000 ج.م', 'min' => 1000, 'max' => 2000],
+            ['label' => 'أكثر من 2000 ج.م', 'min' => 2000, 'max' => 1000000],
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'min' => (float) $minPrice,
+                'max' => (float) $maxPrice,
+                'predefined_ranges' => $ranges
+            ],
         ]);
     }
 }

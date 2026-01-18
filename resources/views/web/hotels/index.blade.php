@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             font-family: Cairo, sans-serif;
@@ -38,80 +39,83 @@
         <div class="flex items-center justify-between mb-10">
             <h1 class="text-3xl font-bold text-gray-900 border-r-4 border-blue-600 pr-4">الفنادق المتاحة</h1>
 
-            <!-- Filter Button (Optional/Hidden for now to match exact design, or styled minimally) -->
-            <!-- <button class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition text-gray-600">
-                <i class="fa-solid fa-sliders"></i>
-                <span class="font-bold">تصفية النتائج</span>
-            </button> -->
+            <!-- Search Near Me Button -->
+            <button onclick="searchNearMe()"
+                class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition text-gray-600 group">
+                <i class="fa-solid fa-location-crosshairs group-hover:text-blue-600"></i>
+                <span class="font-bold group-hover:text-blue-600">البحث بالقرب مني</span>
+            </button>
         </div>
+
+        <script>
+            function searchNearMe() {
+                if ("geolocation" in navigator) {
+                    Swal.fire({
+                        title: 'جاري تحديد موقعك...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        console.log('My Location:', { lat, lng });
+                        window.location.href = `{{ route('web.hotels.index') }}?lat=${lat}&lng=${lng}`;
+                    }, function (error) {
+                        Swal.fire({
+                            title: 'خطأ',
+                            text: 'لم نتمكن من الوصول إلى موقعك الجغرافي. يرجى التأكد من تفعيل الإذن.',
+                            icon: 'error',
+                            confirmButtonText: 'حسناً'
+                        });
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'عذراً',
+                        text: 'متصفحك لا يدعم خاصية تحديد الموقع.',
+                        icon: 'error',
+                        confirmButtonText: 'حسناً'
+                    });
+                }
+            }
+        </script>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             @forelse($hotels as $hotel)
-                <div class="hotel-card group relative bg-white rounded-[24px] overflow-hidden border border-gray-100">
-                    <!-- Image Container -->
-                    <div class="relative h-[320px] overflow-hidden">
-                        <img src="{{ $hotel->media->first() ? $hotel->media->first()->file_url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800' }}"
-                            alt="{{ app()->getLocale() == 'ar' ? $hotel->name_ar : $hotel->name_en }}"
-                            class="w-full h-full object-cover transform group-hover:scale-110 transition duration-700">
-
-                        <!-- Overlay Gradient -->
-                        <div
-                            class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90">
-                        </div>
-
-                        <!-- Top Badges -->
-                        <div class="absolute top-4 left-4 right-4 flex justify-between items-start">
-                            <div class="rating-badge flex items-center gap-1.5 px-3 py-1.5 rounded-full">
-                                <span class="text-white font-bold text-sm">{{ number_format($hotel->rate ?? 0, 1) }}</span>
-                                <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
-                            </div>
-                            <button
-                                class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 hover:text-white transition duration-300">
-                                <i class="fa-regular fa-heart"></i>
-                            </button>
-                        </div>
-
-                        <!-- Content Overlay -->
-                        <div class="absolute bottom-0 left-0 right-0 p-6 text-right">
-                            <div class="flex items-center gap-2 text-gray-300 text-sm mb-2">
-                                <i class="fa-solid fa-location-dot text-blue-400"></i>
-                                <span
-                                    class="truncate">{{ $hotel->province ? (app()->getLocale() == 'ar' ? $hotel->province->name_ar : $hotel->province->name_en) : 'موقع غير محدد' }}</span>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-3">
-                                {{ app()->getLocale() == 'ar' ? $hotel->name_ar : $hotel->name_en }}
+                <div
+                    class="hotel-card border border-gray-100 rounded-3xl overflow-hidden bg-white block relative shadow-sm">
+                    <a href="{{ route('web.hotels.show', $hotel->id) }}">
+                        <img src="{{ $hotel->media->first() ? $hotel->media->first()->file_url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600' }}"
+                            alt="{{ $hotel->name_ar }}" class="w-full h-56 object-cover">
+                    </a>
+                    <button
+                        class="favorite-btn absolute top-4 right-4 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition shadow-sm z-10"
+                        data-hotel-id="{{ $hotel->id }}">
+                        <i
+                            class="fa-solid fa-heart {{ auth()->check() && auth()->user()->favorites()->where('favoritable_id', $hotel->id)->exists() ? 'text-red-500' : '' }}"></i>
+                    </button>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-gray-900 leading-tight">
+                                {{ $hotel->name_ar }} / {{ $hotel->province ? $hotel->province->name_ar : 'مصر' }}
                             </h3>
-                            <div class="flex items-end justify-between">
-                                <div class="text-white">
-                                    <span
-                                        class="text-xl  text-red-600 font-sans">{{ number_format($hotel->rooms->min('price_per_night') ?? 0) }}</span>
-                                    <span class="text-sm text-gray-300">ج.م / ليلة</span>
-                                </div>
-                                <a href="{{ route('web.hotels.show', $hotel) }}"
-                                    class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300 delay-100">
-                                    <i class="fa-solid fa-arrow-left"></i>
-                                </a>
-                            </div>
                         </div>
-                    </div>
-
-                    <!-- Card Body (Only visible on larger screens/details) -->
-                    <div class="p-5 border-t border-gray-50">
-                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
-                            <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
-                                <i class="fa-solid fa-bed text-blue-500"></i>
-                                <span>{{ $hotel->rooms_count ?? 5 }} غرف</span>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div class="flex gap-1 text-yellow-400">
+                                @php $rating = round($hotel->rate ?? $hotel->reviews_avg_rating ?? 5); @endphp
+                                @for($i = 0; $i < 5; $i++)
+                                    <svg class="w-4 h-4 {{ $i < $rating ? 'fill-current' : 'text-gray-200' }}"
+                                        viewBox="0 0 20 20">
+                                        <path
+                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                    </svg>
+                                @endfor
                             </div>
-                            <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
-                                <i class="fa-solid fa-wifi text-blue-500"></i>
-                                <span>واي فاي مجاني</span>
-                            </div>
-                        </div>
-                        <!-- Rating Stars -->
-                        <div class="flex justify-end gap-1 text-xs text-yellow-400">
-                            @for($i = 0; $i < 5; $i++)
-                                <i class="fa-solid fa-star {{ $i < round($hotel->rate ?? 5) ? '' : 'opacity-20' }}"></i>
-                            @endfor
+                            <p class="text-[#FF6B6B] font-bold">
+                                {{ $hotel->rooms->min('price_per_night') ? number_format($hotel->rooms->min('price_per_night')) . ' ج.م / ليلة' : 'اتصل بالسعر' }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -127,9 +131,11 @@
         </div>
 
         <!-- Pagination -->
-        <div class="mt-16 flex justify-center">
-            {{ $hotels->links() }}
-        </div>
+        @if(is_object($hotels) && method_exists($hotels, 'links'))
+            <div class="mt-16 flex justify-center">
+                {{ $hotels->links() }}
+            </div>
+        @endif
     </main>
 
 

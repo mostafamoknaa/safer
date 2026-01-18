@@ -18,13 +18,13 @@ class HomeController extends Controller
         // Get provinces for filter
         $provinces = Province::where('is_active', true)->orderBy('name_ar')->get();
 
-        // Get unique services from hotels
-        $services = Hotel::whereNotNull('services')
-            ->get()
-            ->pluck('services')
-            ->flatten()
-            ->unique()
-            ->values()
+        // Get active services from Master Services table
+        $services = \App\Models\Service::where('is_active', true)->get();
+
+        // Get unique countries from hotels
+        $countries = Hotel::whereNotNull('country')
+            ->distinct()
+            ->pluck('country')
             ->toArray();
 
         // Get popular hotels (top rated)
@@ -34,19 +34,19 @@ class HomeController extends Controller
             ->take(6)
             ->get();
 
-        // Get nearby/recent hotels
+        // Get nearby/recent hotels (fallback if geo not used)
         $nearbyHotels = Hotel::where('is_active', true)
             ->with(['media', 'province', 'rooms'])
             ->latest()
             ->take(4)
             ->get();
 
-        // Get upcoming events (for discovery section)
+        // Get upcoming events (for discovery section) - Limit to 4
         $events = \App\Models\Event::where('is_active', true)
             ->orderBy('event_date', 'desc')
-            ->take(5)
+            ->take(4)
             ->get();
 
-        return view('web.home', compact('popularHotels', 'nearbyHotels', 'events', 'provinces', 'services'));
+        return view('web.home', compact('popularHotels', 'nearbyHotels', 'events', 'provinces', 'services', 'countries'));
     }
 }

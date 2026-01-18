@@ -78,46 +78,56 @@
 
                 <!-- Booking Section -->
                 <div class="md:col-span-1">
-                    <div class="bg-white border border-gray-200 rounded-2xl p-6 sticky top-24 shadow-sm">
-                        <h3 class="text-xl font-bold mb-6">حجز الرحلة</h3>
-                        <form action="{{ route('web.services.buses.request') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="trip_id" value="{{ $trip->id }}">
+                    @if(($trip->available_seats_count ?? 10) > 0)
+                        <div class="bg-white border border-gray-200 rounded-2xl p-6 sticky top-24 shadow-sm">
+                            <h3 class="text-xl font-bold mb-6">حجز الرحلة</h3>
+                            <form action="{{ route('web.services.buses.request') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="trip_id" value="{{ $trip->id }}">
 
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-bold mb-2">عدد المقاعد</label>
-                                <div class="flex items-center border border-gray-300 rounded-xl overflow-hidden">
-                                    <button type="button" onclick="decrementSeats()"
-                                        class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-l">-</button>
-                                    <input type="number" name="number_of_seats" id="seats_input" value="1" min="1"
-                                        max="{{ $trip->available_seats_count ?? 10 }}"
-                                        class="w-full text-center py-2 focus:outline-none" readonly>
-                                    <button type="button" onclick="incrementSeats()"
-                                        class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-r">+</button>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">عدد المقاعد</label>
+                                    <div class="flex items-center border border-gray-300 rounded-xl overflow-hidden">
+                                        <button type="button" onclick="decrementSeats()"
+                                            class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-l">-</button>
+                                        <input type="number" name="number_of_seats" id="seats_input" value="1" min="1"
+                                            max="{{ $trip->available_seats_count ?? 10 }}"
+                                            class="w-full text-center py-2 focus:outline-none" readonly>
+                                        <button type="button" onclick="incrementSeats()"
+                                            class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border-r">+</button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-bold mb-2">مكان الالتقاء (اختياري)</label>
-                                <input type="text" name="pickup_location"
-                                    class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    placeholder="حدد مكان الالتقاء المفضل">
-                            </div>
-
-                            <div class="mb-6">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-gray-600">السعر الإجمالي</span>
-                                    <span class="font-bold text-lg" id="total_price">{{ number_format($trip->price) }}
-                                        ج.م</span>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">مكان الالتقاء (اختياري)</label>
+                                    <input type="text" name="pickup_location"
+                                        class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="حدد مكان الالتقاء المفضل">
                                 </div>
-                            </div>
 
-                            <button type="submit"
-                                class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                                تأكيد الحجز
-                            </button>
-                        </form>
-                    </div>
+                                <div class="mb-6">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-gray-600">السعر الإجمالي</span>
+                                        <span class="font-bold text-lg" id="total_price">{{ number_format($trip->price) }}
+                                            ج.م</span>
+                                    </div>
+                                </div>
+
+                                <button type="submit"
+                                    class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                                    تأكيد الحجز
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <div class="bg-red-50 border border-red-100 rounded-2xl p-8 sticky top-24 text-center">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mx-auto mb-4">
+                                <i class="fa-solid fa-chair text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-red-700 mb-2">المقاعد نفدت</h3>
+                            <p class="text-red-600 text-sm">جميع المقاعد في هذه الرحلة محجوزة تماماً.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

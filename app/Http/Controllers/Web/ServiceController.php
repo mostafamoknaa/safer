@@ -109,22 +109,42 @@ class ServiceController extends Controller
             'private_car_id' => 'required|exists:private_cars,id',
             'pickup_location' => 'required|string',
             'destination' => 'required|string',
-            'pickup_date' => 'required|date|after:today',
+            'pickup_date' => 'required|date|after_or_equal:today',
+            'return_date' => 'nullable|date|after_or_equal:pickup_date',
+            'booking_type' => 'required|in:hours,days',
+            'duration_hours' => 'nullable|integer|min:1',
             'notes' => 'nullable|string',
         ]);
 
         $privateCar = PrivateCar::findOrFail($validated['private_car_id']);
 
+        $totalPrice = 0;
+        if ($validated['booking_type'] === 'days') {
+            $pickupDate = \Carbon\Carbon::parse($validated['pickup_date']);
+            $returnDate = \Carbon\Carbon::parse($validated['return_date'] ?? $validated['pickup_date']);
+            $days = max(1, $pickupDate->diffInDays($returnDate));
+            $totalPrice = $privateCar->price_per_day * $days;
+        } else {
+            $hours = $validated['duration_hours'] ?? 1;
+            $pricePerHour = $privateCar->price_per_hour ?? ($privateCar->price_per_day / 24);
+            $totalPrice = $pricePerHour * $hours;
+        }
+
         ServiceRequest::create([
             'user_id' => auth()->id(),
             'service_type' => 'private_car',
             'private_car_id' => $validated['private_car_id'],
-            'pickup_location' => $validated['pickup_location'],
-            'destination' => $validated['destination'],
-            'pickup_date' => $validated['pickup_date'],
-            'total_price' => $privateCar->price_per_day,
+            'departure_location_ar' => $validated['pickup_location'],
+            'departure_location_en' => $validated['pickup_location'], // Simplified for now
+            'arrival_location_ar' => $validated['destination'],
+            'arrival_location_en' => $validated['destination'], // Simplified for now
+            'start_date' => $validated['pickup_date'],
+            'booking_type' => $validated['booking_type'],
+            'duration_hours' => $validated['booking_type'] === 'hours' ? ($validated['duration_hours'] ?? 1) : null,
+            'total_price' => $totalPrice,
             'status' => 'pending',
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
+            // request_reference is generated in boot()
         ]);
 
         return redirect()->route('web.services.my-requests')

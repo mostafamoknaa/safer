@@ -44,7 +44,6 @@ class Hotel extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'services' => 'array',
         'rate' => 'decimal:1',
         'lat' => 'float',
         'lang' => 'float',
@@ -132,5 +131,72 @@ class Hotel extends Model
     public function favorites()
     {
         return $this->hasMany(Favorite::class, 'favoritable_id');
+    }
+
+    /**
+     * Services Mutator
+     * Automatically converts string inputs from admin to object format
+     */
+    public function setServicesAttribute($value)
+    {
+        if (empty($value)) {
+            $this->attributes['services'] = json_encode([]);
+            return;
+        }
+
+        $transformed = [];
+        $services = is_array($value) ? $value : json_decode($value, true);
+
+        if ($services) {
+            foreach ($services as $s) {
+                // If it's already an object-like array, keep it but ensure id/image
+                if (is_array($s) && (isset($s['id']) || isset($s['image']))) {
+                    $transformed[] = $s;
+                    continue;
+                }
+
+                // Look up in database
+                $model = \App\Models\Service::where('name_en', $s)
+                    ->orWhere('name_ar', $s)
+                    ->orWhere('id', $s)
+                    ->first();
+
+                if ($model) {
+                    $transformed[] = [
+                        'id' => $model->id,
+                        'image' => $model->image,
+                        'name_ar' => $model->name_ar,
+                        'name_en' => $model->name_en,
+                    ];
+                } else {
+                    // Custom service
+                    $transformed[] = ['name_en' => $s, 'name_ar' => $s];
+                }
+            }
+        }
+
+        $this->attributes['services'] = json_encode($transformed);
+    }
+
+    /**
+     * Services Accessor
+     * Returns simple strings for admin panel to maintain compatibility
+     */
+    public function getServicesAttribute($value)
+    {
+        $services = json_decode($value, true) ?: [];
+
+        // If we are in admin context, return simple slugs/names
+        if (request()->is('admin/*') || request()->is('*/admin/*')) {
+            return collect($services)->map(function ($s) {
+                if (is_array($s) && isset($s['id'])) {
+                    $model = \App\Models\Service::find($s['id']);
+                    return $model ? $model->name_en : null;
+                }
+                return is_array($s) ? ($s['name_en'] ?? ($s['name_ar'] ?? null)) : $s;
+            })->filter()->values()->toArray();
+        }
+
+        return $services;
     }
 }

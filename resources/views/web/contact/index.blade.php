@@ -28,54 +28,92 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
                 <div class="md:order-1 flex flex-col items-center justify-center text-center lg:text-right">
                     <div class="mb-10 w-full max-w-md mx-auto">
-                        <img src="{{ asset("contact_us.png") }}"
-                            class="w-full object-contain mix-blend-multiply" alt="Contact Us">
+                        <img src="{{ asset("contact_us.png") }}" class="w-full object-contain mix-blend-multiply"
+                            alt="Contact Us">
                     </div>
 
                     <div
                         class="space-y-4 w-full max-w-xs mx-auto lg:mx-0 lg:mr-auto lg:max-w-none text-gray-600 dir-ltr text-right">
-                        <a href="mailto:info@travelwebsite.com"
-                            class="flex items-center justify-end gap-3 hover:text-blue-600 transition">
-                            <span class="font-medium">info@travelwebsite.com</span>
-                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <i class="fa-regular fa-envelope"></i>
-                            </div>
-                        </a>
+                        @php
+                            $emailLink = $contactLinks->where('type', 'Email')->first();
+                            $phoneLink = $contactLinks->where('type', 'Phone')->first();
+                            $customerServiceLink = $contactLinks->where('type', 'customerService')->first();
+                            $whatsappLink = $contactLinks->where('type', 'whatsapp')->first();
+                            $socialLinks = $contactLinks->whereIn('type', ['Facebook', 'instagram', 'x', 'twitter', 'linkedin', 'Website']);
+                        @endphp
+
+                        @if($emailLink)
+                            <a href="{{ str_contains($emailLink->url, 'mailto:') ? $emailLink->url : 'mailto:' . $emailLink->url }}"
+                                class="flex items-center justify-end gap-3 hover:text-blue-600 transition">
+                                <span class="font-medium">{{ $emailLink->title_ar }}</span>
+                                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i class="fa-regular fa-envelope"></i>
+                                </div>
+                            </a>
+                        @endif
+
                         <div class="flex items-center justify-end gap-3 text-right">
                             <span class="font-medium">القاهرة، مصر</span>
                             <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                                 <i class="fa-solid fa-location-dot"></i>
                             </div>
                         </div>
-                        <a href="tel:+441234567890"
-                            class="flex items-center justify-end gap-3 hover:text-blue-600 transition">
-                            <span class="font-medium text-right direction-ltr">+44 123 456 7890</span>
-                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <i class="fa-solid fa-mobile-screen"></i>
+
+                        @if($phoneLink)
+                            <a href="tel:{{ $phoneLink->url }}"
+                                class="flex items-center justify-end gap-3 hover:text-blue-600 transition">
+                                <span class="font-medium text-right direction-ltr">{{ $phoneLink->title_ar }}</span>
+                                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-mobile-screen"></i>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($customerServiceLink)
+                            <div class="flex items-center justify-end gap-3 text-right">
+                                <span class="font-medium text-right direction-ltr">{{ $customerServiceLink->url }}</span>
+                                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"
+                                    title="خدمة العملاء">
+                                    <i class="fa-solid fa-headset"></i>
+                                </div>
                             </div>
-                        </a>
+                        @endif
+
+                        @if($whatsappLink)
+                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $whatsappLink->url) }}" target="_blank"
+                                class="flex items-center justify-end gap-3 hover:text-green-600 transition">
+                                <span class="font-medium text-right direction-ltr">{{ $whatsappLink->title_ar }}</span>
+                                <div
+                                    class="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </div>
+                            </a>
+                        @endif
 
                         <!-- Social Media -->
                         <div class="flex justify-end gap-3 pt-4">
-                            <a href="#"
-                                class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition">
-                                <i class="fa-brands fa-twitter"></i>
-                            </a>
-                            <a href="#"
-                                class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition">
-                                <i class="fa-brands fa-linkedin-in"></i>
-                            </a>
-                            <a href="#"
-                                class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition">
-                                <i class="fa-brands fa-instagram"></i>
-                            </a>
-                            <a href="#"
-                                class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition">
-                                <i class="fa-brands fa-facebook-f"></i>
-                            </a>
+                            @foreach($socialLinks as $link)
+                                @php
+                                    $iconClass = 'fa-solid fa-globe';
+                                    if (strtolower($link->type) == 'facebook')
+                                        $iconClass = 'fa-brands fa-facebook-f';
+                                    elseif (strtolower($link->type) == 'instagram')
+                                        $iconClass = 'fa-brands fa-instagram';
+                                    elseif (strtolower($link->type) == 'x' || strtolower($link->type) == 'twitter')
+                                        $iconClass = 'fa-brands fa-x-twitter';
+                                    elseif (strtolower($link->type) == 'linkedin')
+                                        $iconClass = 'fa-brands fa-linkedin-in';
+                                @endphp
+                                <a href="{{ str_contains($link->url, 'http') ? $link->url : 'https://' . $link->url }}"
+                                    target="_blank"
+                                    class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition"
+                                    title="{{ $link->title_ar }}">
+                                    <i class="{{ $iconClass }}"></i>
+                                </a>
+                            @endforeach
                         </div>
                     </div>
-                </div> 
+                </div>
                 <div class="md:order-2">
                     @if(session('success'))
                         <div
@@ -124,54 +162,13 @@
                         </button>
                     </form>
                 </div>
-                              
+
             </div>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="bg-[#0A1124] text-white pt-20 pb-10 px-8">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-right">
-            <div>
-                <div class="flex items-center justify-start gap-2 mb-6">
-                    <img src="{{ asset('9f0a5356f37b3a4ffa50fe9cf73267fbc8015c0d.png') }}" class="w-20 h-20 bg-white">
-                </div>
-                <p class="text-gray-400 text-sm leading-relaxed mb-8">موقع سياحي متكامل يساعدك على التخطيط لرحلتك
-                    بسهولة...</p>
-                <div class="flex justify-end gap-3">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
-                        class="w-32">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                        class="w-32">
-                </div>
-            </div>
-            <div>
-                <h3 class="font-bold text-lg mb-6">روابط سريعة</h3>
-                <ul class="space-y-4 text-gray-400 text-sm">
-                    <li>الرئيسية</li>
-                    <li>الإقامات</li>
-                    <li>الخدمات</li>
-                    <li>الانشطة</li>
-                    <li>اتصل بنا</li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="font-bold text-lg mb-6">تواصل معنا</h3>
-                <ul class="space-y-4 text-gray-400 text-sm">
-                    <li class="flex items-center justify-end gap-3"><span>مصر</span><i
-                            class="fa-solid fa-location-dot"></i></li>
-                    <li class="flex items-center justify-end gap-3"><span>support@alfosafr.com</span><i
-                            class="fa-solid fa-envelope"></i></li>
-                    <li class="flex items-center justify-end gap-3"><span dir="ltr">+20 120 495 750</span><i
-                            class="fa-solid fa-phone"></i></li>
-                </ul>
-            </div>
-            <div></div>
-        </div>
-        <div class="max-w-7xl mx-auto mt-16 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-            <p>© 2025 سافر. جميع الحقوق محفوظة.</p>
-        </div>
-    </footer>
+    @include('partials.footer')
 </body>
 
 </html>
