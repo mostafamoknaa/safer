@@ -146,6 +146,14 @@ class PaymentController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            // Notify Admins
+            app(\App\Services\FirebaseNotificationService::class)->sendToAdmins(
+                "عملية دفع جديدة",
+                "قام المستخدم ({$booking->user->name}) بإضافة عملية دفع بقيمة ({$payment->amount}) للحجز ({$booking->booking_reference}).",
+                "new_payment",
+                ['payment_id' => $payment->id, 'booking_id' => $booking->id, 'amount' => $payment->amount]
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.payments.created'),

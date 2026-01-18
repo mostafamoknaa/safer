@@ -79,7 +79,13 @@ class EventController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $wasActive = $event->is_active;
         $event->update($request->all());
+
+        // Notify if activated
+        if (!$wasActive && $event->is_active && $event->user) {
+            app(\App\Services\FirebaseNotificationService::class)->notifyAcceptance($event->user, $event->name_ar ?: $event->name_en, 'event');
+        }
 
         return redirect()->route('admin.events.index')->with('success', 'تم تحديث الفعالية بنجاح');
     }

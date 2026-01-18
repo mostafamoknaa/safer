@@ -45,7 +45,7 @@ class UserEventController extends Controller
         ]);
 
         $validated['user_id'] = Auth::id();
-        $validated['is_active'] = true;
+        $validated['is_active'] = false; // Pending approval
 
         // Handle images upload
         if ($request->hasFile('activity_images')) {
@@ -57,6 +57,9 @@ class UserEventController extends Controller
         }
 
         $event = Event::create($validated);
+
+        // Notify
+        app(\App\Services\FirebaseNotificationService::class)->notifySubmission($event->user, $event->name_ar ?: $event->name_en, 'event');
 
         return response()->json([
             'success' => true,

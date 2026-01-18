@@ -17,13 +17,22 @@
                     </h1>
                     <p class="mt-2 text-sm text-gray-600">إدارة وإرسال الإشعارات للمستخدمين</p>
                 </div>
-                <a href="{{ route('admin.notifications.create') }}" 
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    إرسال إشعار جديد
-                </a>
+                <div class="flex items-center gap-3">
+                    <form action="{{ route('admin.notifications.mark-all-as-read') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-700 font-medium rounded-lg shadow border border-slate-200 hover:bg-slate-50 transition-all duration-200">
+                            <i class="fas fa-check-double text-green-500"></i>
+                            تحديد الكل كمقروء
+                        </button>
+                    </form>
+                    <a href="{{ route('admin.notifications.create') }}" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        إرسال إشعار جديد
+                    </a>
+                </div>
             </div>
         </div>
 

@@ -67,9 +67,12 @@ class UserCarController extends Controller
         ]);
 
         $validated['user_id'] = Auth::id();
-        $validated['is_active'] = true;
+        $validated['is_active'] = false; // Pending approval
 
         $car = PrivateCar::create($validated);
+
+        // Notify
+        app(\App\Services\FirebaseNotificationService::class)->notifySubmission($car->user, $car->name_ar ?: $car->name_en, 'car');
 
         // Handle images
         if ($request->hasFile('images')) {

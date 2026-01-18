@@ -221,9 +221,9 @@
             ],
             [
                 'route' => RouteFacade::has('admin.notifications.index') ? route('admin.notifications.index') : '#',
-                'icon' => 'fas fa-calendar-alt',
+                'icon' => 'fas fa-bell',
                 'active' => RouteFacade::has('admin.notifications.index') ? request()->routeIs('admin.notifications.*') : false,
-                'label' => __('admin.nav.events'),
+                'label' => __('admin.nav.notifications') ?? 'Notifications',
                 'disabled' => ! RouteFacade::has('admin.notifications.index'),
             ],
         ];
@@ -340,6 +340,19 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <a href="{{ route('admin.notifications.index') }}" class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-sky-50 hover:text-sky-600 transition relative">
+                                <i class="fas fa-bell"></i>
+                                @php
+                                    $unreadCount = \App\Models\Notification::where('user_id', auth()->id())->whereNull('read_at')->count();
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                        {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                                    </span>
+                                @endif
+                            </a>
+                        </div>
                         <div class="hidden sm:flex flex-col text-sm text-right text-slate-600">
                             <span class="font-semibold text-slate-900">{{ __('admin.layout.greeting', ['name' => auth()->user()?->name]) }}</span>
                             <span class="text-xs text-slate-500">{{ now()->translatedFormat('l d F Y') }}</span>

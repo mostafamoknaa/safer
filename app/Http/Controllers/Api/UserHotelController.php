@@ -130,6 +130,9 @@ class UserHotelController extends Controller
 
         $hotel = Hotel::create($validated);
 
+        // Notify
+        app(\App\Services\FirebaseNotificationService::class)->notifySubmission($hotel->user, $hotel->name_ar ?: $hotel->name_en, 'hotel');
+
         // Handle hotel images only
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
@@ -369,6 +372,9 @@ class UserHotelController extends Controller
         $newHotel->name_ar .= ' (نسخة)';
         $newHotel->is_active = false; // Reset status
         $newHotel->push();
+
+        // Notify
+        app(\App\Services\FirebaseNotificationService::class)->notifySubmission($newHotel->user, $newHotel->name_ar ?: $newHotel->name_en, 'hotel');
 
         // Clone Hotel Media
         foreach ($hotel->media as $media) {

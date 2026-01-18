@@ -388,6 +388,14 @@ class BookingController extends Controller
                 $voucher->increment('used_count');
             }
 
+            // Notify Admins
+            app(\App\Services\FirebaseNotificationService::class)->sendToAdmins(
+                "حجز جديد",
+                "قام المستخدم ({$booking->user->name}) بإجراء حجز جديد برقم مرجع ({$booking->booking_reference}).",
+                "new_booking",
+                ['booking_id' => $booking->id, 'reference' => $booking->booking_reference]
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.bookings.created'),

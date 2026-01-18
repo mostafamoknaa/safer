@@ -53,6 +53,15 @@ class NotificationController extends Controller
         return view('admin.notifications.show', compact('notification'));
     }
 
+    public function markAllAsRead()
+    {
+        Notification::where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return redirect()->back()->with('success', 'تم تحديد جميع الإشعارات كمقروءة');
+    }
+
     public function destroy(Notification $notification)
     {
         $notification->delete();

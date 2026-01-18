@@ -100,7 +100,13 @@ class PrivateCarController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $wasActive = $privateCar->is_active;
         $privateCar->update($validated);
+
+        // Notify if activated
+        if (!$wasActive && $privateCar->is_active && $privateCar->user) {
+            app(\App\Services\FirebaseNotificationService::class)->notifyAcceptance($privateCar->user, $privateCar->name_ar ?: $privateCar->name_en, 'car');
+        }
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {

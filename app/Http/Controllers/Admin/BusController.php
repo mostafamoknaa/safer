@@ -71,7 +71,13 @@ class BusController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $wasActive = $bus->is_active;
         $bus->update($validated);
+
+        // Notify if activated
+        if (!$wasActive && $bus->is_active && $bus->user) {
+            app(\App\Services\FirebaseNotificationService::class)->notifyAcceptance($bus->user, $bus->name_ar ?: $bus->name_en, 'bus');
+        }
 
         return redirect()
             ->route('admin.buses.index')

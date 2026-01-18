@@ -171,7 +171,14 @@ class BookingController extends Controller
         $validated['nights_count'] = $nightsCount;
         $validated['total_price'] = $validated['price_per_night'] * $nightsCount * $validated['rooms_count'];
 
+        $oldStatus = $booking->status;
         $booking->update($validated);
+
+        // Notify if status changed to confirmed
+        if ($oldStatus !== 'confirmed' && $booking->status === 'confirmed' && $booking->user) {
+            $itemName = $booking->hotel ? ($booking->hotel->name_ar ?: $booking->hotel->name_en) : 'الفندق';
+            app(\App\Services\FirebaseNotificationService::class)->notifyBookingApproval($booking->user, $itemName, 'hotel');
+        }
 
         return redirect()
             ->route('admin.bookings.show', $booking)

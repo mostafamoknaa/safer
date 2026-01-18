@@ -60,8 +60,13 @@ class HotelController extends Controller
     public function update(Request $request, Hotel $hotel): RedirectResponse
     {
         $data = $this->validatedData($request);
-
+        $wasActive = $hotel->is_active;
         $hotel->update($data);
+
+        // Notify if activated
+        if (!$wasActive && $hotel->is_active && $hotel->user) {
+            app(\App\Services\FirebaseNotificationService::class)->notifyAcceptance($hotel->user, $hotel->name_ar ?: $hotel->name_en, 'hotel');
+        }
 
         $this->handleMedia($request, $hotel);
 

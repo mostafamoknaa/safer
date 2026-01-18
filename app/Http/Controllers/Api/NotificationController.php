@@ -99,6 +99,24 @@ class NotificationController extends Controller
     }
 
     /**
+     * Update user FCM token.
+     */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fcm_token' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        $user->update(['fcm_token' => $request->fcm_token]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FCM token updated successfully',
+        ]);
+    }
+
+    /**
      * Insert sample notifications for testing.
      */
     public function insertSampleNotifications(): JsonResponse

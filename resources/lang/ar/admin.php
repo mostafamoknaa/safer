@@ -46,6 +46,7 @@ return [
         'private_cars' => 'السيارات الخاصة',
         'service_requests' => 'طلبات الخدمات',
         'events' => 'الفعاليات',
+        'notifications' => 'الإشعارات',
     ],
     'dashboard' => [
         'page_title' => 'لوحة تحكم الإدارة',

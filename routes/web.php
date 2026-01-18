@@ -250,6 +250,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('vouchers', \App\Http\Controllers\Admin\VoucherController::class);
 
         // Notifications routes
+        Route::post('notifications/mark-all-as-read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])
+            ->name('notifications.mark-all-as-read');
         Route::resource('notifications', \App\Http\Controllers\Admin\NotificationController::class)
             ->except(['edit', 'update']);
 

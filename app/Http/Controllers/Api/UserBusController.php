@@ -38,9 +38,12 @@ class UserBusController extends Controller
         ]);
 
         $validated['user_id'] = Auth::id();
-        $validated['is_active'] = true;
+        $validated['is_active'] = false; // Pending approval
 
         $bus = Bus::create($validated);
+
+        // Notify
+        app(\App\Services\FirebaseNotificationService::class)->notifySubmission($bus->user, $bus->name_ar ?: $bus->name_en, 'bus');
 
         return response()->json([
             'success' => true,
