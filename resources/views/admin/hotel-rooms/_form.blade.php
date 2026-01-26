@@ -53,6 +53,18 @@
             @enderror
         </div>
         <div class="grid gap-2">
+            <label for="max_people" class="text-sm font-medium text-slate-600">
+                {{ __('admin.hotel_rooms.form.max_people') ?? 'أقصى عدد للأشخاص' }}
+            </label>
+            <input id="max_people" name="max_people" type="number" min="1"
+                   value="{{ old('max_people', $hotelRoom->max_people ?? '1') }}"
+                   class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                   required>
+            @error('max_people')
+                <p class="text-xs text-rose-600">{{ $message }}</p>
+            @enderror
+        </div>
+        <div class="grid gap-2">
             <label for="beds_count" class="text-sm font-medium text-slate-600">
                 {{ __('admin.hotel_rooms.form.beds_count') }}
             </label>

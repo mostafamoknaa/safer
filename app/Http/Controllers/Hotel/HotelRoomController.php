@@ -197,6 +197,7 @@ class HotelRoomController extends Controller
     {
         $rules = [
             'price_per_night' => ['required', 'numeric', 'min:0'],
+            'max_people' => ['required', 'integer', 'min:1'],
             'beds_count' => ['required', 'integer', 'min:1'],
             'bathrooms_count' => ['required', 'integer', 'min:1'],
             'rooms_count' => ['required', 'integer', 'min:1'],

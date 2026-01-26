@@ -76,6 +76,14 @@
                             <p class="mt-1 text-slate-700">{{ $booking->guests_count }}</p>
                         </div>
                         <div>
+                            <label class="text-xs font-medium uppercase text-slate-500">{{ __('hotel.bookings.table.adults') ?? 'Adults' }}</label>
+                            <p class="mt-1 text-slate-700">{{ $booking->adults_count }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium uppercase text-slate-500">{{ __('hotel.bookings.table.young') ?? 'Young' }}</label>
+                            <p class="mt-1 text-slate-700">{{ $booking->young_count }}</p>
+                        </div>
+                        <div>
                             <label class="text-xs font-medium uppercase text-slate-500">{{ __('hotel.bookings.table.rooms') }}</label>
                             <p class="mt-1 text-slate-700">{{ $booking->rooms_count }}</p>
                         </div>

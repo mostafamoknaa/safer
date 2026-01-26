@@ -71,6 +71,8 @@
                         <th class="px-4 py-3">{{ __('hotel.bookings.table.hotel') }}</th>
                         <th class="px-4 py-3">{{ __('hotel.bookings.table.check_in') }}</th>
                         <th class="px-4 py-3">{{ __('hotel.bookings.table.check_out') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('hotel.bookings.table.adults') ?? 'Adults' }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('hotel.bookings.table.young') ?? 'Young' }}</th>
                         <th class="px-4 py-3">{{ __('hotel.bookings.table.total_price') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('hotel.bookings.table.status') }}</th>
                         <th class="px-4 py-3 text-center">{{ __('hotel.bookings.table.actions') }}</th>
@@ -96,6 +98,12 @@
                             </td>
                             <td class="px-4 py-4 text-slate-600">
                                 {{ $booking->check_out_date->format('Y-m-d') }}
+                            </td>
+                            <td class="px-4 py-4 text-center text-slate-600">
+                                {{ $booking->adults_count }}
+                            </td>
+                            <td class="px-4 py-4 text-center text-slate-600">
+                                {{ $booking->young_count }}
                             </td>
                             <td class="px-4 py-4 font-semibold text-slate-800">
                                 {{ number_format($booking->total_price, 2) }} {{ __('hotel.bookings.currency') }}
