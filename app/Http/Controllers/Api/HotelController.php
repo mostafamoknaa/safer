@@ -120,6 +120,15 @@ class HotelController extends Controller
             $query->where('type', $request->type);
         }
 
+        // Filter by people count
+        if ($request->filled('people_count')) {
+            $peopleCount = $request->people_count;
+            $query->whereHas('rooms', function ($q) use ($peopleCount) {
+                $q->where('is_active', true)
+                  ->where('max_people', '>=', $peopleCount);
+            });
+        }
+
         $hotels = $query->orderBy('name_ar')->get()
             ->map(function ($hotel) use ($favoriteIds) {
 
@@ -584,6 +593,15 @@ class HotelController extends Controller
               $query->where('type', $request->type);
           }
 
+          // Filter by people count
+          if ($request->filled('people_count')) {
+              $peopleCount = $request->people_count;
+              $query->whereHas('rooms', function ($q) use ($peopleCount) {
+                  $q->where('is_active', true)
+                    ->where('max_people', '>=', $peopleCount);
+              });
+          }
+
           // Filter by services
           if ($request->filled('services')) {
               $services = is_array($request->services)
@@ -639,6 +657,7 @@ class HotelController extends Controller
                           'name' => $room->name ?? 'Room ' . $room->id,
                           'type' => $room->type ?? 'standard',
                           'price_per_night' => (float) $room->price_per_night,
+                          'max_people' => $room->max_people,
                           'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
                           'service_fee' => (float) ($room->service_fee ?? 0),
                           'beds_count' => $room->beds_count,
@@ -725,7 +744,7 @@ class HotelController extends Controller
                               'max' => (float) $maxPrice,
                           ]
                           : null,
-                      'managers' => $managers,
+                      'owner' => $managers,
                       'images' => $images,
                       'videos' => $videos,
                       'rooms' => $rooms,

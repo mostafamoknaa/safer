@@ -26,6 +26,7 @@ class HotelRoom extends Model
         'checkout_time',
         'blocked_slots',
         'services',
+        'max_people',
     ];
 
     protected $casts = [

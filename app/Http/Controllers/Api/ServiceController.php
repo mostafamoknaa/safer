@@ -382,7 +382,7 @@ class ServiceController extends Controller
     public function getUserRequests(Request $request): JsonResponse
     {
         $query = ServiceRequest::where('user_id', Auth::id())
-            ->with(['trip.bus', 'bus', 'privateCar', 'user']);
+            ->with(['trip.bus', 'trip.user', 'bus.user', 'privateCar.user', 'user']);
 
         if ($request->filled('type')) {
             $query->where('service_type', $request->type);
@@ -408,12 +408,30 @@ class ServiceController extends Controller
                         'trip_date' => $req->trip->trip_date->format('Y-m-d'),
                     ] : null;
                     $data['passengers_count'] = $req->passengers_count;
+                    
+                    // Owner data for bus
+                    $owner = $req->trip && $req->trip->user ? $req->trip->user : ($req->bus && $req->bus->user ? $req->bus->user : null);
+                    $data['owner'] = $owner ? [
+                        'id' => $owner->id,
+                        'name' => $owner->name,
+                        'phone' => $owner->phone,
+                        'image' => $owner->image,
+                    ] : null;
                 } else {
                     $data['car'] = $req->privateCar ? [
                         'name' => app()->getLocale() === 'ar' ? $req->privateCar->name_ar : $req->privateCar->name_en,
                     ] : null;
                     $data['duration_hours'] = $req->duration_hours;
                     $data['start_date'] = $req->start_date ? $req->start_date->format('Y-m-d') : null;
+
+                    // Owner data for car
+                    $owner = $req->privateCar ? $req->privateCar->user : null;
+                    $data['owner'] = $owner ? [
+                        'id' => $owner->id,
+                        'name' => $owner->name,
+                        'phone' => $owner->phone,
+                        'image' => $owner->image,
+                    ] : null;
                 }
 
                 return $data;

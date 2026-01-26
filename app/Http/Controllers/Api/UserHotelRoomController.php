@@ -23,6 +23,7 @@ class UserHotelRoomController extends Controller
 
         $validated = $request->validate([
             'price_per_night' => 'required|numeric|min:0',
+            'max_people' => 'required|integer|min:1',
             'beds_count' => 'required|integer|min:1',
             'bathrooms_count' => 'required|integer|min:1',
             'rooms_count' => 'required|integer|min:1',
@@ -84,6 +85,7 @@ class UserHotelRoomController extends Controller
 
         $validated = $request->validate([
             'price_per_night' => 'numeric|min:0',
+            'max_people' => 'integer|min:1',
             'beds_count' => 'integer|min:1',
             'bathrooms_count' => 'integer|min:1',
             'rooms_count' => 'integer|min:1',
@@ -203,6 +205,7 @@ class UserHotelRoomController extends Controller
             'rooms' => 'required|array|min:1',
             'rooms.*.id' => 'required|exists:hotel_rooms,id',
             'rooms.*.price_per_night' => 'nullable|numeric|min:0',
+            'rooms.*.max_people' => 'nullable|integer|min:1',
             'rooms.*.beds_count' => 'nullable|integer|min:1',
             'rooms.*.bathrooms_count' => 'nullable|integer|min:1',
             'rooms.*.rooms_count' => 'nullable|integer|min:1',
@@ -264,6 +267,7 @@ class UserHotelRoomController extends Controller
             'room_ids' => 'required|array|min:1',
             'room_ids.*' => 'required|exists:hotel_rooms,id',
             'price_per_night' => 'nullable|numeric|min:0',
+            'max_people' => 'nullable|integer|min:1',
             'beds_count' => 'nullable|integer|min:1',
             'bathrooms_count' => 'nullable|integer|min:1',
             'rooms_count' => 'nullable|integer|min:1',

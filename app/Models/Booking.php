@@ -18,6 +18,8 @@ class Booking extends Model
         'check_in_date',
         'check_out_date',
         'guests_count',
+        'adults_count',
+        'young_count',
         'rooms_count',
         'total_price',
         'price_per_night',
@@ -34,6 +36,8 @@ class Booking extends Model
         'total_price' => 'decimal:2',
         'price_per_night' => 'decimal:2',
         'guests_count' => 'integer',
+        'adults_count' => 'integer',
+        'young_count' => 'integer',
         'rooms_count' => 'integer',
         'nights_count' => 'integer',
     ];

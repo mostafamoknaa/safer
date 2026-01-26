@@ -21,7 +21,7 @@ class BookingController extends Controller
     public function getUserBookings(Request $request): JsonResponse
     {
         $query = Booking::with([
-            'hotel', 'hotel.province', 'hotel.media',
+            'hotel', 'hotel.province', 'hotel.media', 'hotel.user',
             'bookedRooms.room', 'bookedRooms.room.media'
         ])->where('user_id', Auth::id());
 
@@ -89,12 +89,20 @@ class BookingController extends Controller
                             'id' => $booking->hotel->province->id,
                             'name' => app()->getLocale() === 'ar' ? $booking->hotel->province->name_ar : $booking->hotel->province->name_en,
                         ] : null,
+                        'owner' => $booking->hotel->user ? [
+                            'id' => $booking->hotel->user->id,
+                            'name' => $booking->hotel->user->name,
+                            'phone' => $booking->hotel->user->phone,
+                            'image' => $booking->hotel->user->image,
+                        ] : null,
                     ] : null,
                     'rooms' => $rooms,
                     'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                     'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
                     'nights_count' => $booking->nights_count,
                     'guests_count' => $booking->guests_count,
+                    'adults_count' => $booking->adults_count,
+                    'young_count' => $booking->young_count,
                     'rooms_count' => $booking->rooms_count,
                     'price_per_night' => $booking->price_per_night ? (float) $booking->price_per_night : null,
                     'total_price' => (float) $booking->total_price,
@@ -147,7 +155,7 @@ class BookingController extends Controller
                             'phone' => $ticket->event->phone,
                             'activity_type' => $ticket->event->activity_type,
                             'activity_images' => $ticket->event->activity_images,
-                            'organizer' => $ticket->event->user ? [
+                            'owner' => $ticket->event->user ? [
                                 'id' => $ticket->event->user->id,
                                 'name' => $ticket->event->user->name,
                                 'phone' => $ticket->event->user->phone,
@@ -173,7 +181,7 @@ class BookingController extends Controller
         }
 
         $booking->load([
-            'hotel', 'hotel.province', 'hotel.media', 
+            'hotel', 'hotel.province', 'hotel.media', 'hotel.user',
             'bookedRooms.room', 'bookedRooms.room.media', 'payments'
         ]);
 
@@ -242,12 +250,20 @@ class BookingController extends Controller
                         'name_ar' => $booking->hotel->province->name_ar,
                         'name_en' => $booking->hotel->province->name_en,
                     ] : null,
+                    'owner' => $booking->hotel->user ? [
+                        'id' => $booking->hotel->user->id,
+                        'name' => $booking->hotel->user->name,
+                        'phone' => $booking->hotel->user->phone,
+                        'image' => $booking->hotel->user->image,
+                    ] : null,
                 ] : null,
                 'rooms' => $rooms,
                 'check_in_date' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
                 'check_out_date' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
                 'nights_count' => $booking->nights_count,
                 'guests_count' => $booking->guests_count,
+                'adults_count' => $booking->adults_count,
+                'young_count' => $booking->young_count,
                 'rooms_count' => $booking->rooms_count,
                 'price_per_night' => $booking->price_per_night ? (float) $booking->price_per_night : null,
                 'total_price' => (float) $booking->total_price,
@@ -273,10 +289,13 @@ class BookingController extends Controller
                 'room_ids.*' => 'required|exists:hotel_rooms,id',
                 'check_in_date' => 'required|date|after_or_equal:today',
                 'check_out_date' => 'required|date|after:check_in_date',
-                'guests_count' => 'required|integer|min:1|max:100',
+                'adults_count' => 'required|integer|min:1|max:100',
+                'young_count' => 'required|integer|min:0|max:100',
                 'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
             ]);
+
+            $validated['guests_count'] = $validated['adults_count'] + $validated['young_count'];
 
             $hotel = Hotel::findOrFail($validated['hotel_id']);
 
@@ -297,6 +316,15 @@ class BookingController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => __('api.hotels.room_not_available'),
+                ], 400);
+            }
+
+            // Validate capacity
+            $totalMaxPeople = $rooms->sum('max_people');
+            if ($validated['guests_count'] > $totalMaxPeople) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'عدد الأشخاص يتجاوز السعة القصوى للغرف المختارة (' . $totalMaxPeople . ' شخص)',
                 ], 400);
             }
 
@@ -360,6 +388,8 @@ class BookingController extends Controller
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
                 'guests_count' => $validated['guests_count'],
+                'adults_count' => $validated['adults_count'],
+                'young_count' => $validated['young_count'],
                 'rooms_count' => count($validated['room_ids']),
                 'price_per_night' => $rooms->sum('price_per_night'),
                 'total_price' => $finalPrice,
