@@ -90,6 +90,11 @@
                                         <i class="fas fa-copy"></i>
                                         استنساخ
                                     </button>
+                                    <a href="{{ route('admin.ical.index', $room) }}"
+                                       class="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/20">
+                                        <i class="fas fa-sync"></i>
+                                        تزامن
+                                    </a>
                                     <form method="POST" action="{{ route('admin.hotel-rooms.destroy', $room) }}"
                                           onsubmit="return confirm('{{ __('admin.hotel_rooms.confirm_delete') }}')">
                                         @csrf

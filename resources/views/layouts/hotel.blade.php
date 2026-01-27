@@ -111,6 +111,13 @@
                 'disabled' => ! RouteFacade::has('hotel.bookings.index'),
             ],
             [
+                'route' => RouteFacade::has('hotel.hotel-rooms.index') ? route('hotel.hotel-rooms.index') : '#',
+                'icon' => 'fas fa-sync',
+                'active' => request()->routeIs('hotel.ical.*'),
+                'label' => 'تزامن التقويم (iCal)',
+                'disabled' => ! RouteFacade::has('hotel.hotel-rooms.index'),
+            ],
+            [
                 'route' => RouteFacade::has('hotel.payments.index') ? route('hotel.payments.index') : '#',
                 'icon' => 'fas fa-money-bill-wave',
                 'active' => RouteFacade::has('hotel.payments.index') ? request()->routeIs('hotel.payments.*') : false,

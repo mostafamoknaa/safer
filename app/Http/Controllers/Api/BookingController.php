@@ -330,6 +330,7 @@ class BookingController extends Controller
 
             // Check availability for each room
             foreach ($rooms as $room) {
+                // Check via BookingRoom pivot table
                 $conflict = BookingRoom::where('room_id', $room->id)
                     ->whereHas('booking', function($q) use ($validated) {
                         $q->where(function ($query) use ($validated) {
@@ -342,6 +343,22 @@ class BookingController extends Controller
                         })->whereIn('status', ['pending', 'confirmed', 'checked_in']);
                     })
                     ->exists();
+
+                // Also check for iCal-imported bookings (direct room bookings)
+                if (!$conflict) {
+                    $conflict = Booking::where('room_id', $room->id)
+                        ->whereNotNull('ical_url_id') // Only check iCal imports
+                        ->where(function ($query) use ($validated) {
+                            $query->whereBetween('check_in_date', [$validated['check_in_date'], $validated['check_out_date']])
+                                ->orWhereBetween('check_out_date', [$validated['check_in_date'], $validated['check_out_date']])
+                                ->orWhere(function ($q) use ($validated) {
+                                    $q->where('check_in_date', '<=', $validated['check_in_date'])
+                                        ->where('check_out_date', '>=', $validated['check_out_date']);
+                                });
+                        })
+                        ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                        ->exists();
+                }
 
                 if ($conflict) {
                     return response()->json([

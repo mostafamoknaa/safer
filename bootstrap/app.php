@@ -55,4 +55,10 @@ return Application::configure(basePath: dirname(__DIR__))
             
             return $response;
         });
+    })
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        $schedule->command('ical:sync')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground();
     })->create();

@@ -55,4 +55,9 @@ class HotelRoom extends Model
     {
         return $this->hasMany(Booking::class, 'room_id');
     }
+
+    public function icalUrls(): HasMany
+    {
+        return $this->hasMany(IcalUrl::class);
+    }
 }

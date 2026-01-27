@@ -28,6 +28,8 @@ class Booking extends Model
         'notes',
         'admin_notes',
         'booking_reference',
+        'ical_url_id',
+        'external_event_uid',
     ];
 
     protected $casts = [
@@ -72,6 +74,11 @@ class Booking extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function icalUrl(): BelongsTo
+    {
+        return $this->belongsTo(IcalUrl::class);
     }
 
     /**
