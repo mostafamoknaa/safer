@@ -12,6 +12,7 @@ class IcalUrl extends Model
     use HasFactory;
 
     protected $fillable = [
+        'hotel_id',
         'hotel_room_id',
         'url',
         'name',
@@ -23,6 +24,11 @@ class IcalUrl extends Model
     protected $casts = [
         'last_sync_at' => 'datetime',
     ];
+
+    public function hotel(): BelongsTo
+    {
+        return $this->belongsTo(Hotel::class);
+    }
 
     public function hotelRoom(): BelongsTo
     {

@@ -1,19 +1,19 @@
 @extends('layouts.admin')
 
-@section('title', 'إدارة التقويم - ' . (app()->getLocale() === 'ar' ? $hotelRoom->hotel->name_ar : $hotelRoom->hotel->name_en))
+@section('title', 'إدارة التقويم - ' . (app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en))
 @section('page-title', 'إدارة التقويم')
 @section('page-subtitle', 'مزامنة الحجوزات مع منصات أخرى')
 
 @section('content')
     <div class="grid gap-6">
-        {{-- Room Info --}}
+        {{-- Hotel Info --}}
         <div class="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/60 backdrop-blur">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900">{{ app()->getLocale() === 'ar' ? $hotelRoom->hotel->name_ar : $hotelRoom->hotel->name_en }}</h3>
-                    <p class="text-sm text-slate-500">غرفة رقم: {{ $hotelRoom->id }}</p>
+                    <h3 class="text-lg font-bold text-slate-900">{{ app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en }}</h3>
+                    <p class="text-sm text-slate-500">منشأة رقم: {{ $hotel->id }}</p>
                 </div>
-                <a href="{{ route('admin.hotel-rooms.index', ['hotel_id' => $hotelRoom->hotel_id]) }}"
+                <a href="{{ route('admin.hotels.index') }}"
                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
                     <i class="fas fa-arrow-right"></i>
                     رجوع
@@ -27,11 +27,11 @@
                 <i class="fas fa-upload text-indigo-600"></i>
                 تصدير التقويم
             </h3>
-            <p class="text-sm text-slate-600 mb-4">استخدم هذا الرابط لمزامنة حجوزات هذه الغرفة مع منصات أخرى</p>
+            <p class="text-sm text-slate-600 mb-4">استخدم هذا الرابط لمزامنة جميع حجوزات الفندق مع منصات أخرى</p>
             
             <div class="flex items-center gap-3">
                 <input type="text" readonly
-                       value="{{ route('hotel.ical.export', $hotelRoom) }}"
+                       value="{{ route('hotel.ical.export', ['hotel' => $hotel->id]) }}"
                        id="exportUrl"
                        class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-800 font-mono">
                 <button onclick="copyExportUrl()"
@@ -48,10 +48,10 @@
                 <i class="fas fa-download text-emerald-600"></i>
                 استيراد التقويم
             </h3>
-            <p class="text-sm text-slate-600 mb-4">أضف روابط التقويم من المنصات الأخرى لمنع الحجز المزدوج</p>
+            <p class="text-sm text-slate-600 mb-4">أضف روابط التقويم من المنصات الأخرى لمنع الحجز المزدوج للمنشأة بالكامل</p>
 
             {{-- Add New URL Form --}}
-            <form method="POST" action="{{ route('admin.ical.store', $hotelRoom) }}" class="mb-6">
+            <form method="POST" action="{{ route('admin.ical.store', $hotel) }}" class="mb-6">
                 @csrf
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div>
@@ -80,7 +80,7 @@
             </form>
 
             {{-- URLs List --}}
-            @if($hotelRoom->icalUrls->count() > 0)
+            @if($hotel->icalUrls->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-right text-sm">
                         <thead class="bg-slate-50 text-xs font-medium uppercase tracking-wider text-slate-500">
@@ -93,7 +93,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
-                            @foreach($hotelRoom->icalUrls as $icalUrl)
+                            @foreach($hotel->icalUrls as $icalUrl)
                                 <tr>
                                     <td class="px-4 py-4 font-semibold text-slate-800">
                                         {{ $icalUrl->name ?: 'غير محدد' }}
@@ -123,7 +123,7 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 text-center">
-                                        <form method="POST" action="{{ route('admin.ical.destroy', [$hotelRoom, $icalUrl]) }}" class="inline">
+                                        <form method="POST" action="{{ route('admin.ical.destroy', [$hotel, $icalUrl]) }}" class="inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"

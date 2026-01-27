@@ -62,6 +62,11 @@
                             </td>
                             <td class="px-4 py-4 text-center">
                                 <div class="flex items-center justify-center gap-2">
+                                    <a href="{{ route('hotel.ical.index', $hotel) }}"
+                                       class="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-500/20">
+                                        <i class="fas fa-sync"></i>
+                                        تزامن
+                                    </a>
                                     <a href="{{ route('hotel.hotel-rooms.index', ['hotel_id' => $hotel->id]) }}"
                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-500/20">
                                         <i class="fas fa-bed"></i>

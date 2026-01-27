@@ -250,11 +250,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('vouchers', \App\Http\Controllers\Admin\VoucherController::class);
 
         // iCal Synchronization
-        Route::get('hotel-rooms/{hotelRoom}/ical', [\App\Http\Controllers\Admin\IcalController::class, 'index'])
+        Route::get('hotels/{hotel}/ical', [\App\Http\Controllers\Admin\IcalController::class, 'index'])
             ->name('ical.index');
-        Route::post('hotel-rooms/{hotelRoom}/ical', [\App\Http\Controllers\Admin\IcalController::class, 'store'])
+        Route::post('hotels/{hotel}/ical', [\App\Http\Controllers\Admin\IcalController::class, 'store'])
             ->name('ical.store');
-        Route::delete('hotel-rooms/{hotelRoom}/ical/{icalUrl}', [\App\Http\Controllers\Admin\IcalController::class, 'destroy'])
+        Route::delete('hotels/{hotel}/ical/{icalUrl}', [\App\Http\Controllers\Admin\IcalController::class, 'destroy'])
             ->name('ical.destroy');
 
         // Notifications routes
@@ -415,15 +415,15 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
         Route::resource('trips', \App\Http\Controllers\Hotel\TripController::class)->except('show');
 
         // iCal Synchronization
-        Route::get('hotel-rooms/{hotelRoom}/ical', [\App\Http\Controllers\Hotel\IcalController::class, 'index'])
+        Route::get('hotels/{hotel}/ical', [\App\Http\Controllers\Hotel\IcalController::class, 'index'])
             ->name('ical.index');
-        Route::post('hotel-rooms/{hotelRoom}/ical', [\App\Http\Controllers\Hotel\IcalController::class, 'store'])
+        Route::post('hotels/{hotel}/ical', [\App\Http\Controllers\Hotel\IcalController::class, 'store'])
             ->name('ical.store');
-        Route::delete('hotel-rooms/{hotelRoom}/ical/{icalUrl}', [\App\Http\Controllers\Hotel\IcalController::class, 'destroy'])
+        Route::delete('hotels/{hotel}/ical/{icalUrl}', [\App\Http\Controllers\Hotel\IcalController::class, 'destroy'])
             ->name('ical.destroy');
     });
 
     // Public iCal export (no auth required)
-    Route::get('ical/export/{hotelRoom}', [\App\Http\Controllers\Hotel\IcalController::class, 'export'])
+    Route::get('ical/export/{hotel}', [\App\Http\Controllers\Hotel\IcalController::class, 'export'])
         ->name('ical.export');
 });

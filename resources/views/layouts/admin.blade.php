@@ -150,11 +150,11 @@
                 'disabled' => ! RouteFacade::has('admin.hotels.index'),
             ],
             [
-                'route' => RouteFacade::has('admin.hotel-rooms.index') ? route('admin.hotel-rooms.index') : '#',
+                'route' => RouteFacade::has('admin.hotels.index') ? route('admin.hotels.index') : '#',
                 'icon' => 'fas fa-sync',
                 'active' => request()->routeIs('admin.ical.*'),
-                'label' => 'تزامن الحجوزات (iCal)',
-                'disabled' => ! RouteFacade::has('admin.hotel-rooms.index'),
+                'label' => 'تزامن الفنادق (iCal)',
+                'disabled' => ! RouteFacade::has('admin.hotels.index'),
             ],
             [
                 'route' => RouteFacade::has('admin.users.index') ? route('admin.users.index') : '#',

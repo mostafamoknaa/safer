@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ical_urls', function (Blueprint $table) {
-            //
+            $table->foreignId('hotel_id')->nullable()->after('id')->constrained('hotels')->cascadeOnDelete();
+            $table->unsignedBigInteger('hotel_room_id')->nullable()->change();
         });
     }
 
@@ -22,7 +23,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('ical_urls', function (Blueprint $table) {
-            //
+            $table->dropForeign(['hotel_id']);
+            $table->dropColumn('hotel_id');
+            $table->unsignedBigInteger('hotel_room_id')->nullable(false)->change();
         });
     }
 };

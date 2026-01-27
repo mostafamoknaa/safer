@@ -133,4 +133,9 @@ class Hotel extends Model
     {
         return $this->hasMany(Favorite::class, 'favoritable_id');
     }
+
+    public function icalUrls(): HasMany
+    {
+        return $this->hasMany(IcalUrl::class);
+    }
 }

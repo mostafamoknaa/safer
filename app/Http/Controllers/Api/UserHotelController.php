@@ -89,6 +89,9 @@ class UserHotelController extends Controller
             'lang' => 'required|numeric',
             'country' => 'nullable|string|max:255',
             'website_url' => 'nullable|string|max:255',
+            'icals' => 'nullable|array',
+            'icals.*.name' => 'nullable|string|max:100',
+            'icals.*.url' => 'required|url|max:500',
         ]);
 
         // Upload documents
@@ -146,6 +149,13 @@ class UserHotelController extends Controller
             }
         }
 
+        // Handle iCal URLs
+        if ($request->has('icals')) {
+            foreach ($request->icals as $ical) {
+                $hotel->icalUrls()->create($ical);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'تم إرسال طلب إضافة الفندق بنجاح وسيتم مراجعته',
@@ -199,6 +209,10 @@ class UserHotelController extends Controller
             'lang' => 'nullable|numeric',
             'country' => 'nullable|string|max:255',
             'website_url' => 'nullable|string|max:255',
+            'icals' => 'nullable|array',
+            'icals.*.id' => 'nullable|exists:ical_urls,id',
+            'icals.*.name' => 'nullable|string|max:100',
+            'icals.*.url' => 'required|url|max:500',
         ]);
 
         if ($request->has('services')) {
@@ -215,7 +229,6 @@ class UserHotelController extends Controller
 
         $hotel->update($validated);
 
-
         // Add new images
         if ($request->hasFile('images')) {
             $orderColumn = $hotel->media()->max('order_column') ?? -1;
@@ -227,6 +240,20 @@ class UserHotelController extends Controller
                     'file_path' => $path,
                     'order_column' => ++$orderColumn,
                 ]);
+            }
+        }
+
+        // Handle iCal URLs update
+        if ($request->has('icals')) {
+            foreach ($request->icals as $ical) {
+                if (isset($ical['id'])) {
+                    $hotel->icalUrls()->where('id', $ical['id'])->update([
+                        'name' => $ical['name'] ?? null,
+                        'url' => $ical['url'],
+                    ]);
+                } else {
+                    $hotel->icalUrls()->create($ical);
+                }
             }
         }
 
@@ -248,7 +275,7 @@ class UserHotelController extends Controller
             ], 403);
         }
 
-        $hotel->load(['media', 'rooms.media', 'bookings.user', 'bookings.room']);
+        $hotel->load(['media', 'rooms.media', 'bookings.user', 'bookings.room', 'icalUrls']);
 
         return response()->json([
             'success' => true,
@@ -278,6 +305,7 @@ class UserHotelController extends Controller
                 'blocked_dates' => $hotel->blocked_dates,
                 'identity_images' => $hotel->identity_images,
                 'lease_agreement' => $hotel->lease_agreement,
+                'ical_urls' => $hotel->icalUrls,
                 'images' => $hotel->media->map(function($media) {
                     return [
                         'id' => $media->id,
@@ -296,12 +324,14 @@ class UserHotelController extends Controller
                         'service_fee' => $room->service_fee,
                         'is_active' => $room->is_active,
                         'services' => $room->services,
+                        'ical_urls' => $room->icalUrls,
                         'images' => $room->media->map(fn($m) => [
                             'id' => $m->id,
                             'url' => asset('storage/' . $m->file_path),
                         ]),
                     ];
                 }),
+
                 'bookings' => $hotel->bookings->map(function($booking) {
                     return [
                         'id' => $booking->id,
