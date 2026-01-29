@@ -609,7 +609,8 @@ class HotelController extends Controller
                   : [$request->services];
 
               foreach ($services as $service) {
-                  $query->whereJsonContains('services', $service);
+                  $query->where('services', 'LIKE', '%"id": ' . $service . ',%')
+                        ->orWhere('services', 'LIKE', '%"id":' . $service . ',%');
               }
           }
 

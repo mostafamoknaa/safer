@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'fawaterk' => [
+        'api_token' => env('FAWATERK_API_TOKEN'),
+        'base_url' => env('FAWATERK_BASE_URL', 'https://staging.fawaterk.com/api/v2'),
+    ],
 ];

@@ -291,11 +291,12 @@ class BookingController extends Controller
                 'check_out_date' => 'required|date|after:check_in_date',
                 'adults_count' => 'required|integer|min:1|max:100',
                 'young_count' => 'required|integer|min:0|max:100',
+                'infants_count' => 'nullable|integer|min:0|max:100',
                 'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
             ]);
 
-            $validated['guests_count'] = $validated['adults_count'] + $validated['young_count'];
+            $validated['guests_count'] = $validated['adults_count'] + $validated['young_count']*0.5;
 
             $hotel = Hotel::findOrFail($validated['hotel_id']);
 
@@ -321,7 +322,9 @@ class BookingController extends Controller
 
             // Validate capacity
             $totalMaxPeople = $rooms->sum('max_people');
-            if ($validated['guests_count'] > $totalMaxPeople) {
+            // Round guests_count to avoid floating-point precision issues
+            $guestsCount = round($validated['guests_count'], 2);
+            if ($guestsCount > $totalMaxPeople) {
                 return response()->json([
                     'success' => false,
                     'message' => 'عدد الأشخاص يتجاوز السعة القصوى للغرف المختارة (' . $totalMaxPeople . ' شخص)',

@@ -23,10 +23,11 @@ class UserHotelRoomController extends Controller
 
         $validated = $request->validate([
             'price_per_night' => 'required|numeric|min:0',
+            'type' => 'nullable|string',
             'max_people' => 'required|integer|min:1',
             'beds_count' => 'required|integer|min:1',
             'bathrooms_count' => 'required|integer|min:1',
-            'rooms_count' => 'required|integer|min:1',
+            'rooms_count' => 'nullable|integer|min:1',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'cleaning_fee' => 'nullable',
@@ -88,7 +89,7 @@ class UserHotelRoomController extends Controller
             'max_people' => 'integer|min:1',
             'beds_count' => 'integer|min:1',
             'bathrooms_count' => 'integer|min:1',
-            'rooms_count' => 'integer|min:1',
+            'rooms_count' => 'nullable|integer|min:1',
             'is_active' => 'boolean',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',

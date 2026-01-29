@@ -5,13 +5,22 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Services\FawaterkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    protected $fawaterkService;
+
+    public function __construct(FawaterkService $fawaterkService)
+    {
+        $this->fawaterkService = $fawaterkService;
+    }
+
     /**
      * Get user payments.
      */
@@ -146,6 +155,63 @@ class PaymentController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            $responseData = [
+                'id' => $payment->id,
+                'amount' => (float) $payment->amount,
+                'remaining_amount' => (float) ($remainingAmount - $payment->amount),
+            ];
+
+            // Handle Online Payment via Fawaterk
+            if ($validated['payment_method'] === 'online') {
+                try {
+                    $fawaterkData = [
+                        'amount' => $payment->amount,
+                        'user_name' => $booking->user->name,
+                        'user_email' => $booking->user->email,
+                        'user_phone' => $booking->user->phone ?? '01000000000', // Fallback or validate phone
+                        'payment_method_id' => $request->input('payment_method_id', 3), // Default to card (check docs)
+                        'description' => "Payment for Booking #{$booking->booking_reference}",
+                    ];
+
+                    $result = $this->fawaterkService->executePayment($fawaterkData);
+
+                    if (isset($result['data']['payment_data']['redirectTo'])) {
+                        $payment->update([
+                            'transaction_id' => $result['data']['invoice_id'] ?? null, 
+                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A')
+                        ]);
+                        
+                        $responseData['payment_url'] = $result['data']['payment_data']['redirectTo'];
+                    } elseif (isset($result['data']['payment_data']['fawryCode'])) {
+                         $payment->update([
+                            'transaction_id' => $result['data']['invoice_id'] ?? null, 
+                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A') . "\nFawry Code: " . $result['data']['payment_data']['fawryCode']
+                        ]);
+                        
+                        $responseData['fawry_code'] = $result['data']['payment_data']['fawryCode'];
+                        $responseData['expire_date'] = $result['data']['payment_data']['expireDate'];
+                        $responseData['message'] = 'Use this code to pay via Fawry';
+                    } else {
+                        // Fallback: just return available payment data
+                        $payment->update([
+                            'transaction_id' => $result['data']['invoice_id'] ?? null,
+                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A')
+                        ]);
+                        $responseData['payment_data'] = $result['data']['payment_data'] ?? [];
+                    }
+
+                } catch (\Exception $e) {
+                    $payment->update(['status' => 'failed', 'notes' => 'Failed to init online payment: ' . $e->getMessage()]);
+                    Log::error("Fawaterk Init Error: " . $e->getMessage());
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Online payment initiation failed.',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+            }
+
             // Notify Admins
             app(\App\Services\FirebaseNotificationService::class)->sendToAdmins(
                 "عملية دفع جديدة",
@@ -157,11 +223,7 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => __('api.payments.created'),
-                'data' => [
-                    'id' => $payment->id,
-                    'amount' => (float) $payment->amount,
-                    'remaining_amount' => (float) ($remainingAmount - $payment->amount),
-                ],
+                'data' => $responseData,
             ], 201);
 
         } catch (ValidationException $e) {
@@ -172,5 +234,89 @@ class PaymentController extends Controller
             ], 422);
         }
     }
-}
 
+    /**
+     * Verify payment status manually.
+     */
+    public function verifyPayment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'payment_id' => 'required|exists:payments,id',
+            'invoice_id' => 'required|string',
+        ]);
+
+        $payment = Payment::findOrFail($request->payment_id);
+        
+        try {
+            $statusData = $this->fawaterkService->checkInvoiceStatus($request->invoice_id);
+            
+            // Check status in response (Adjust based on actual API response structure)
+            // Assuming 'paid' boolean or 'status' string
+            $isPaid = false;
+            $status = 'pending';
+            
+            if (isset($statusData['data']['users_res']['invoice_status'])) {
+                 $status = $statusData['data']['users_res']['invoice_status'];
+                 if ($status === 'paid') {
+                     $isPaid = true;
+                 }
+            }
+            
+            if ($isPaid && $payment->status !== 'success') {
+                $payment->update([
+                    'status' => 'success',
+                    'paid_at' => now(),
+                    'notes' => $payment->notes . "\nVerified Success from API",
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                   'status' => $payment->status,
+                   'invoice_status' => $status
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function paymentSuccess(Request $request)
+    {
+        $invoiceId = $request->query('invoice_id');
+        
+        if ($invoiceId) {
+            $payment = Payment::where('transaction_id', $invoiceId)->first();
+            if ($payment && $payment->status !== 'success') {
+                $payment->update([
+                    'status' => 'success',
+                    'paid_at' => now(),
+                ]);
+            }
+        }
+        
+        // You might want to return a view here instead of JSON for the browser redirect
+        return response()->json(['message' => 'Payment Successful', 'invoice_id' => $invoiceId]);
+    }
+
+    public function paymentFail(Request $request)
+    {
+        $invoiceId = $request->query('invoice_id');
+        if ($invoiceId) {
+            Payment::where('transaction_id', $invoiceId)->update(['status' => 'failed']);
+        }
+        
+        return response()->json(['message' => 'Payment Failed', 'invoice_id' => $invoiceId]);
+    }
+    
+    public function paymentPending(Request $request)
+    {
+        return response()->json(['message' => 'Payment Pending']); 
+    }
+}

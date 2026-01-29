@@ -20,7 +20,7 @@ class UserHotelController extends Controller
     public function getUserHotels(): JsonResponse
     {
         $hotels = Hotel::where('user_id', Auth::id())
-            ->with(['media', 'province'])
+            ->with(['media', 'province', 'icalUrls'])
             ->get()
             ->map(function ($hotel) {
                 return [
@@ -49,6 +49,7 @@ class UserHotelController extends Controller
                     'blocked_dates' => $hotel->blocked_dates,
                     'identity_images' => $hotel->identity_images,
                     'lease_agreement' => $hotel->lease_agreement,
+                    'ical' => $hotel->icalUrls,
                     'images' => $hotel->media->map(fn($media) => asset('storage/' . $media->file_path)),
                     'created_at' => $hotel->created_at,
                     'updated_at' => $hotel->updated_at,

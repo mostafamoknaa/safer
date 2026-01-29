@@ -74,9 +74,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancelBooking']);
 
     // Payments routes
+    Route::get('/payments/verify', [\App\Http\Controllers\Api\PaymentController::class, 'verifyPayment'])->name('api.payments.verify');
+    Route::get('/payments/callback/success', [\App\Http\Controllers\Api\PaymentController::class, 'paymentSuccess'])->name('api.payments.callback.success');
+    Route::get('/payments/callback/fail', [\App\Http\Controllers\Api\PaymentController::class, 'paymentFail'])->name('api.payments.callback.fail');
+    Route::get('/payments/callback/pending', [\App\Http\Controllers\Api\PaymentController::class, 'paymentPending'])->name('api.payments.callback.pending');
+    
     Route::get('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'getUserPayments']);
-    Route::get('/payments/{payment}', [\App\Http\Controllers\Api\PaymentController::class, 'getPaymentDetails']);
     Route::post('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'createPayment']);
+    Route::get('/payments/{payment}', [\App\Http\Controllers\Api\PaymentController::class, 'getPaymentDetails']);
 
     // Favorites routes
     Route::get('/favorites', [\App\Http\Controllers\Api\FavoriteController::class, 'getFavorites']);
