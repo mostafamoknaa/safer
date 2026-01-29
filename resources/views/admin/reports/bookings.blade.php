@@ -134,6 +134,8 @@
                         <th class="px-4 py-3">{{ __('admin.bookings.table.check_out_date') }}</th>
                         <th class="px-4 py-3">{{ __('admin.bookings.table.status') }}</th>
                         <th class="px-4 py-3">{{ __('admin.bookings.table.total_price') }}</th>
+                        <th class="px-4 py-3">العموله</th>
+                        <th class="px-4 py-3">صافي الموفر</th>
                         <th class="px-4 py-3">{{ __('admin.bookings.table.created_at') }}</th>
                     </tr>
                 </thead>
@@ -163,6 +165,23 @@
                             </td>
                             <td class="px-4 py-3 font-semibold text-slate-900">
                                 {{ number_format($booking->total_price, 2) }} {{ __('admin.bookings.currency') }}
+                            </td>
+                            @php
+                                $commissionRate = 0;
+                                if ($booking->hotel) {
+                                    $commissionRate = $booking->hotel->type === 'hotel_apartment' 
+                                        ? ($settings->apartment_commission ?? 0) 
+                                        : ($settings->hotel_commission ?? 0);
+                                }
+                                $commissionValue = ($booking->total_price * $commissionRate) / 100;
+                                $netValue = $booking->total_price - $commissionValue;
+                            @endphp
+                            <td class="px-4 py-3 text-slate-600">
+                                <span class="text-xs text-slate-400">({{ $commissionRate }}%)</span>
+                                <span class="font-medium text-rose-600">{{ number_format($commissionValue, 2) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-emerald-600 font-bold">
+                                {{ number_format($netValue, 2) }}
                             </td>
                             <td class="px-4 py-3 text-xs text-slate-500">
                                 {{ optional($booking->created_at)->format('Y-m-d H:i') }}

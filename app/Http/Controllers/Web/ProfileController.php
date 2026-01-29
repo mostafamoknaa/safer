@@ -24,11 +24,15 @@ class ProfileController extends Controller
             'phone' => ['nullable', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
             'image' => 'nullable|image|max:2048', // 2MB Max
+            'type' => 'nullable|in:customer,provider',
+            'card_number' => 'nullable|string|max:50',
         ]);
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->phone = $validated['phone'];
+        $user->type = $validated['type'] ?? $user->type;
+        $user->card_number = $validated['card_number'] ?? $user->card_number;
 
         if ($request->filled('password')) {
             $user->password = Hash::make($validated['password']);

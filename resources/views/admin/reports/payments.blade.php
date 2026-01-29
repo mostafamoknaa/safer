@@ -143,6 +143,8 @@
                         <th class="px-4 py-3">{{ __('admin.payments.table.user') }}</th>
                         <th class="px-4 py-3">{{ __('admin.reports.payments.table.hotel') }}</th>
                         <th class="px-4 py-3">{{ __('admin.payments.table.amount') }}</th>
+                        <th class="px-4 py-3">العموله</th>
+                        <th class="px-4 py-3">صافي الموفر</th>
                         <th class="px-4 py-3">{{ __('admin.payments.table.method') }}</th>
                         <th class="px-4 py-3">{{ __('admin.payments.table.status') }}</th>
                         <th class="px-4 py-3">{{ __('admin.payments.table.paid_at') }}</th>
@@ -162,6 +164,23 @@
                             </td>
                             <td class="px-4 py-3 font-semibold text-slate-900">
                                 {{ number_format($payment->amount, 2) }} {{ __('admin.payments.currency') }}
+                            </td>
+                            @php
+                                $commissionRate = 0;
+                                if ($payment->booking?->hotel) {
+                                    $commissionRate = $payment->booking->hotel->type === 'hotel_apartment' 
+                                        ? ($settings->apartment_commission ?? 0) 
+                                        : ($settings->hotel_commission ?? 0);
+                                }
+                                $commissionValue = ($payment->amount * $commissionRate) / 100;
+                                $netValue = $payment->amount - $commissionValue;
+                            @endphp
+                            <td class="px-4 py-3 text-slate-600">
+                                <span class="text-xs text-slate-400">({{ $commissionRate }}%)</span>
+                                <span class="font-medium text-rose-600">{{ number_format($commissionValue, 2) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-emerald-600 font-bold">
+                                {{ number_format($netValue, 2) }}
                             </td>
                             <td class="px-4 py-3 text-slate-700">
                                 {{ __('admin.payments.methods.' . $payment->payment_method) }}

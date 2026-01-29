@@ -16,14 +16,19 @@ class HotelController extends Controller
     /**
      * Display a listing of hotels managed by the current user.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
-        $hotels = Hotel::where('user_id', $user->id)
+        $query = Hotel::where('user_id', $user->id)
             ->with('province')
             ->withCount('rooms')
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $hotels = $query->get();
 
         return view('hotel.hotels.index', compact('hotels'));
     }

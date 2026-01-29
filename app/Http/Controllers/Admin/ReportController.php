@@ -73,8 +73,12 @@ class ReportController extends Controller
                     'Rooms Count',
                     'Guests Count',
                     'Total Price',
+                    'Commission',
+                    'Hotel Net',
                     'Created At',
                 ]);
+
+                $settings = \App\Models\GlobalSetting::first();
 
                 foreach ($bookings as $booking) {
                     fputcsv($handle, [
@@ -90,6 +94,8 @@ class ReportController extends Controller
                         $booking->rooms_count,
                         $booking->guests_count,
                         $booking->total_price,
+                        (($booking->total_price * ($booking->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100),
+                        ($booking->total_price - (($booking->total_price * ($booking->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100)),
                         optional($booking->created_at)->format('Y-m-d H:i:s'),
                     ]);
                 }
@@ -106,8 +112,9 @@ class ReportController extends Controller
         $users = User::where('is_admin', false)
             ->orderBy('name')
             ->get();
+        $settings = \App\Models\GlobalSetting::first();
 
-        return view('admin.reports.bookings', compact('bookings', 'hotels', 'users'));
+        return view('admin.reports.bookings', compact('bookings', 'hotels', 'users', 'settings'));
     }
 
     /**
@@ -167,9 +174,13 @@ class ReportController extends Controller
                     'Amount',
                     'Method',
                     'Status',
+                    'Commission',
+                    'Net',
                     'Paid At',
                     'Created At',
                 ]);
+
+                $settings = \App\Models\GlobalSetting::first();
 
                 foreach ($payments as $payment) {
                     fputcsv($handle, [
@@ -184,6 +195,8 @@ class ReportController extends Controller
                         $payment->amount,
                         $payment->payment_method,
                         $payment->status,
+                        (($payment->amount * ($payment->booking?->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100),
+                        ($payment->amount - (($payment->amount * ($payment->booking?->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100)),
                         optional($payment->paid_at)->format('Y-m-d H:i:s'),
                         optional($payment->created_at)->format('Y-m-d H:i:s'),
                     ]);
@@ -199,8 +212,9 @@ class ReportController extends Controller
 
         $hotels = Hotel::orderBy('name_ar')->get();
         $users = User::where('is_admin', false)->orderBy('name')->get();
+        $settings = \App\Models\GlobalSetting::first();
 
-        return view('admin.reports.payments', compact('payments', 'hotels', 'users'));
+        return view('admin.reports.payments', compact('payments', 'hotels', 'users', 'settings'));
     }
 
     /**
@@ -251,9 +265,13 @@ class ReportController extends Controller
                     'Type',
                     'Details',
                     'Total Price',
+                    'Commission',
+                    'Net',
                     'Status',
                     'Created At',
                 ]);
+
+                $settings = \App\Models\GlobalSetting::first();
 
                 foreach ($requests as $req) {
                     $details = '';
@@ -274,6 +292,8 @@ class ReportController extends Controller
                         $req->service_type,
                         $details,
                         $req->total_price,
+                        @$commission = ($req->total_price * ($req->service_type === 'bus' ? ($settings->bus_commission ?? 0) : (($req->booking_type === 'hourly') ? ($settings->car_hour_commission ?? 0) : ($settings->car_day_commission ?? 0)))) / 100,
+                        ($req->total_price - $commission),
                         $req->status,
                         optional($req->created_at)->format('Y-m-d H:i:s'),
                     ]);
@@ -287,8 +307,9 @@ class ReportController extends Controller
 
         $requests = $query->paginate(20)->withQueryString();
         $users = User::where('is_admin', false)->orderBy('name')->get();
+        $settings = \App\Models\GlobalSetting::first();
 
-        return view('admin.reports.services', compact('requests', 'users'));
+        return view('admin.reports.services', compact('requests', 'users', 'settings'));
     }
 
     /**
@@ -367,8 +388,9 @@ class ReportController extends Controller
         $tickets = $query->paginate(20)->withQueryString();
         $events = Event::orderBy('event_date', 'desc')->get();
         $users = User::where('is_admin', false)->orderBy('name')->get();
+        $settings = \App\Models\GlobalSetting::first();
 
-        return view('admin.reports.events', compact('tickets', 'events', 'users'));
+        return view('admin.reports.events', compact('tickets', 'events', 'users', 'settings'));
     }
 }
 

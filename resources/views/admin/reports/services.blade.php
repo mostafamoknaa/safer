@@ -130,6 +130,8 @@
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.service_type') }}</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.details') }}</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.price') }}</th>
+                        <th class="px-4 py-3">العموله</th>
+                        <th class="px-4 py-3">صافي الموفر</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.status') }}</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.date') }}</th>
                     </tr>
@@ -159,6 +161,25 @@
                             </td>
                             <td class="px-4 py-3 font-semibold text-slate-900">
                                 {{ number_format($request->total_price, 2) }} {{ __('admin.service_requests.currency') }}
+                            </td>
+                            @php
+                                $commissionRate = 0;
+                                if ($request->service_type === 'bus') {
+                                    $commissionRate = $settings->bus_commission ?? 0;
+                                } elseif ($request->service_type === 'private_car') {
+                                    $commissionRate = ($request->booking_type === 'hourly') 
+                                        ? ($settings->car_hour_commission ?? 0) 
+                                        : ($settings->car_day_commission ?? 0);
+                                }
+                                $commissionValue = ($request->total_price * $commissionRate) / 100;
+                                $netValue = $request->total_price - $commissionValue;
+                            @endphp
+                            <td class="px-4 py-3 text-slate-600">
+                                <span class="text-xs text-slate-400">({{ $commissionRate }}%)</span>
+                                <span class="font-medium text-rose-600">{{ number_format($commissionValue, 2) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-emerald-600 font-bold">
+                                {{ number_format($netValue, 2) }}
                             </td>
                             <td class="px-4 py-3">
                                 @include('admin.service-requests._status_badge', ['status' => $request->status])

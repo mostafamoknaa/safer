@@ -98,7 +98,7 @@ class ServiceRequest extends Model
      */
     public function getDepartureLocationAttribute(): string
     {
-        return app()->getLocale() === 'ar' ? $this->departure_location_ar : $this->departure_location_en;
+        return (string) (app()->getLocale() === 'ar' ? $this->departure_location_ar : $this->departure_location_en);
     }
 
     /**
@@ -106,7 +106,7 @@ class ServiceRequest extends Model
      */
     public function getArrivalLocationAttribute(): string
     {
-        return app()->getLocale() === 'ar' ? $this->arrival_location_ar : $this->arrival_location_en;
+        return (string) (app()->getLocale() === 'ar' ? $this->arrival_location_ar : $this->arrival_location_en);
     }
 
     /**

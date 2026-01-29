@@ -343,6 +343,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('reports.services');
         Route::get('reports/events', [\App\Http\Controllers\Admin\ReportController::class, 'events'])
             ->name('reports.events');
+
+        // Global Settings
+        Route::get('settings/global', [\App\Http\Controllers\Admin\GlobalSettingController::class, 'edit'])
+            ->name('settings.global');
+        Route::put('settings/global', [\App\Http\Controllers\Admin\GlobalSettingController::class, 'update'])
+            ->name('settings.global.update');
     });
 });
 

@@ -27,6 +27,8 @@ class User extends Authenticatable
         'is_active',
         'image',
         'fcm_token',
+        'type',
+        'card_number',
     ];
 
     /**
@@ -51,6 +53,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_active' => 'boolean',
+            'type' => 'string', // or simplify to string for now since it's enum in DB
         ];
     }
 

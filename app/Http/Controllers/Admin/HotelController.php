@@ -13,9 +13,15 @@ use Illuminate\View\View;
 
 class HotelController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $hotels = Hotel::with(['province', 'user'])->orderByDesc('created_at')->paginate(12);
+        $query = Hotel::with(['province', 'user'])->orderByDesc('created_at');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $hotels = $query->paginate(12)->withQueryString();
 
         return view('admin.hotels.index', compact('hotels'));
     }

@@ -233,8 +233,14 @@
                 'label' => __('admin.nav.notifications') ?? 'Notifications',
                 'disabled' => ! RouteFacade::has('admin.notifications.index'),
             ],
+            [
+                'route' => route('admin.settings.global'),
+                'icon' => 'fas fa-gears',
+                'active' => request()->routeIs('admin.settings.global'),
+                'label' => 'عمولة الخدمات',
+            ],
         ];
-    @endphp
+@endphp
 
     <div id="mobileOverlay" class="overlay fixed inset-0 bg-slate-900/60 z-40 lg:hidden"></div>
 

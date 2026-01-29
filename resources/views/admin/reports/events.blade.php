@@ -131,6 +131,8 @@
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.user') }}</th>
                         <th class="px-4 py-3">{{ __('admin.events.tickets_count') }}</th>
                         <th class="px-4 py-3">{{ __('admin.events.total_price') }}</th>
+                        <th class="px-4 py-3">العموله</th>
+                        <th class="px-4 py-3">صافي الموفر</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.status') }}</th>
                         <th class="px-4 py-3">{{ __('admin.service_requests.table.date') }}</th>
                     </tr>
@@ -146,6 +148,18 @@
                             <td class="px-4 py-3 text-slate-700">{{ $ticket->tickets_count }}</td>
                             <td class="px-4 py-3 font-semibold text-slate-900">
                                 {{ number_format($ticket->total_price, 2) }} {{ __('admin.events.currency') }}
+                            </td>
+                            @php
+                                $commissionRate = $settings->activity_commission ?? 0;
+                                $commissionValue = ($ticket->total_price * $commissionRate) / 100;
+                                $netValue = $ticket->total_price - $commissionValue;
+                            @endphp
+                            <td class="px-4 py-3 text-slate-600">
+                                <span class="text-xs text-slate-400">({{ $commissionRate }}%)</span>
+                                <span class="font-medium text-rose-600">{{ number_format($commissionValue, 2) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-emerald-600 font-bold">
+                                {{ number_format($netValue, 2) }}
                             </td>
                             <td class="px-4 py-3">
                                 @if($ticket->status === 'pending')
