@@ -74,10 +74,31 @@
                                 #{{ $payment->id }}
                             </td>
                             <td class="px-4 py-4">
-                                <div>
-                                    <p class="font-semibold text-slate-900">{{ $payment->booking->booking_reference }}</p>
-                                    <p class="text-xs text-slate-500">{{ $payment->booking->user->name }}</p>
-                                </div>
+                                @if($payment->payable)
+                                    @php
+                                        $reference = match(class_basename($payment->payable)) {
+                                            'Booking' => $payment->payable->booking_reference,
+                                            'ServiceRequest' => $payment->payable->request_reference,
+                                            'EventTicket' => $payment->payable->ticket_reference,
+                                            default => '#' . $payment->payable->id
+                                        };
+                                        $typeLabel = match(class_basename($payment->payable)) {
+                                            'Booking' => 'فندق',
+                                            'ServiceRequest' => 'خدمة',
+                                            'EventTicket' => 'فعالية',
+                                            default => 'أخرى'
+                                        };
+                                    @endphp
+                                    <div>
+                                        <p class="font-semibold text-slate-900">{{ $reference }}</p>
+                                        <p class="text-xs text-slate-500">
+                                            <span class="badge badge-sm bg-slate-100">{{ $typeLabel }}</span>
+                                            {{ $payment->payable->user?->name ?? '-' }}
+                                        </p>
+                                    </div>
+                                @else
+                                    -
+                                @endif
                             </td>
                             <td class="px-4 py-4 font-semibold text-slate-900">
                                 {{ number_format($payment->amount, 2) }} {{ __('admin.payments.currency') }}

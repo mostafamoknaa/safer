@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\HasPayments;
+
 class Booking extends Model
 {
-    use HasFactory;
+    use HasFactory, HasPayments;
 
     protected $fillable = [
         'user_id',
@@ -68,14 +70,6 @@ class Booking extends Model
         return $this->belongsTo(HotelRoom::class, 'room_id');
     }
 
-    /**
-     * Get the payments for this booking.
-     */
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
-
     public function icalUrl(): BelongsTo
     {
         return $this->belongsTo(IcalUrl::class);
@@ -87,32 +81,6 @@ class Booking extends Model
     public function bookedRooms(): HasMany
     {
         return $this->hasMany(BookingRoom::class);
-    }
-
-    /**
-     * Get total paid amount.
-     */
-    public function getTotalPaidAttribute(): float
-    {
-        return $this->payments()
-            ->where('status', 'completed')
-            ->sum('amount');
-    }
-
-    /**
-     * Get remaining amount to pay.
-     */
-    public function getRemainingAmountAttribute(): float
-    {
-        return max(0, $this->total_price - $this->total_paid);
-    }
-
-    /**
-     * Check if booking is fully paid.
-     */
-    public function isFullyPaid(): bool
-    {
-        return $this->total_paid >= $this->total_price;
     }
 
     /**

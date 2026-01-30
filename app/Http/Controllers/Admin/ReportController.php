@@ -122,7 +122,7 @@ class ReportController extends Controller
      */
     public function payments(Request $request)
     {
-        $query = Payment::with(['booking.user', 'booking.hotel'])
+        $query = Payment::with(['payable'])
             ->orderByDesc('created_at');
 
         if ($request->filled('status')) {
@@ -140,7 +140,7 @@ class ReportController extends Controller
         }
 
         if ($request->filled('user_id')) {
-            $query->whereHas('booking', function ($q) use ($request) {
+            $query->whereHasMorph('payable', [Booking::class, \App\Models\ServiceRequest::class, \App\Models\EventTicket::class], function ($q) use ($request) {
                 $q->where('user_id', $request->user_id);
             });
         }
@@ -183,20 +183,43 @@ class ReportController extends Controller
                 $settings = \App\Models\GlobalSetting::first();
 
                 foreach ($payments as $payment) {
+                    $payable = $payment->payable;
+                    $reference = match(true) {
+                        $payable instanceof \App\Models\Booking => $payable->booking_reference,
+                        $payable instanceof \App\Models\ServiceRequest => $payable->request_reference,
+                        $payable instanceof \App\Models\EventTicket => $payable->ticket_reference,
+                        default => '-'
+                    };
+
+                    $name = match(true) {
+                        $payable instanceof \App\Models\Booking && $payable->hotel => (app()->getLocale() === 'ar' ? $payable->hotel->name_ar : $payable->hotel->name_en),
+                        $payable instanceof \App\Models\ServiceRequest => ($payable->service_type === 'bus' ? 'Bus Service' : 'Private Car'),
+                        $payable instanceof \App\Models\EventTicket && $payable->event => (app()->getLocale() === 'ar' ? $payable->event->name_ar : $payable->event->name_en),
+                        default => '-'
+                    };
+
+                    $commissionRate = 0;
+                    if ($payable instanceof \App\Models\Booking && $payable->hotel) {
+                        $commissionRate = $payable->hotel->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0);
+                    } elseif ($payable instanceof \App\Models\ServiceRequest) {
+                        $commissionRate = $payable->service_type === 'bus' ? ($settings->bus_commission ?? 0) : (($payable->booking_type === 'hourly') ? ($settings->car_hour_commission ?? 0) : ($settings->car_day_commission ?? 0));
+                    } elseif ($payable instanceof \App\Models\EventTicket) {
+                        $commissionRate = $settings->activity_commission ?? 0;
+                    }
+
+                    $commissionValue = ($payment->amount * $commissionRate) / 100;
+                    $netValue = $payment->amount - $commissionValue;
+
                     fputcsv($handle, [
                         $payment->id,
-                        $payment->booking?->booking_reference,
-                        $payment->booking?->user?->name,
-                        $payment->booking?->hotel
-                            ? (app()->getLocale() === 'ar'
-                                ? $payment->booking->hotel->name_ar
-                                : $payment->booking->hotel->name_en)
-                            : null,
+                        $reference,
+                        $payable?->user?->name ?? '-',
+                        $name,
                         $payment->amount,
                         $payment->payment_method,
                         $payment->status,
-                        (($payment->amount * ($payment->booking?->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100),
-                        ($payment->amount - (($payment->amount * ($payment->booking?->hotel?->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0))) / 100)),
+                        $commissionValue,
+                        $netValue,
                         optional($payment->paid_at)->format('Y-m-d H:i:s'),
                         optional($payment->created_at)->format('Y-m-d H:i:s'),
                     ]);

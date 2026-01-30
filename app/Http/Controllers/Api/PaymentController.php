@@ -26,9 +26,14 @@ class PaymentController extends Controller
      */
     public function getUserPayments(Request $request): JsonResponse
     {
-        $query = Payment::with(['booking', 'booking.hotel'])
-            ->whereHas('booking', function ($q) {
-                $q->where('user_id', Auth::id());
+        $query = Payment::query()
+            ->where(function ($q) {
+                // Ensure the payment belongs to the authenticated user
+                // This assumes all payable models have a user_id or similar owner field
+                // For safety, we can filter model-wise or rely on a standard user_id
+                $q->whereHasMorph('payable', [Booking::class, \App\Models\ServiceRequest::class, \App\Models\EventTicket::class], function ($query) {
+                    $query->where('user_id', Auth::id());
+                });
             });
 
         // Filter by status
@@ -36,23 +41,48 @@ class PaymentController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter by booking
-        if ($request->filled('booking_id')) {
-            $query->where('booking_id', $request->booking_id);
+        // Filter by payable
+        if ($request->filled('payable_id') && $request->filled('payable_type')) {
+            $type = $this->resolvePayableType($request->payable_type);
+            if ($type) {
+                $query->where('payable_id', $request->payable_id)
+                      ->where('payable_type', $type);
+            }
         }
 
         $payments = $query->orderByDesc('created_at')
             ->get()
             ->map(function ($payment) {
+                $payableData = null;
+                if ($payment->payable) {
+                    $type = class_basename($payment->payable);
+                    $reference = match($type) {
+                        'Booking' => $payment->payable->booking_reference,
+                        'ServiceRequest' => $payment->payable->request_reference,
+                        'EventTicket' => $payment->payable->ticket_reference,
+                        default => '#' . $payment->payable->id
+                    };
+
+                    $name = '';
+                    if ($type === 'Booking' && $payment->payable->hotel) {
+                        $name = app()->getLocale() === 'ar' ? $payment->payable->hotel->name_ar : $payment->payable->hotel->name_en;
+                    } elseif ($type === 'ServiceRequest') {
+                         $name = $payment->payable->service_type === 'bus' ? 'Bus Service' : 'Private Car';
+                    } elseif ($type === 'EventTicket' && $payment->payable->event) {
+                         $name = app()->getLocale() === 'ar' ? $payment->payable->event->name_ar : $payment->payable->event->name_en;
+                    }
+
+                    $payableData = [
+                        'id' => $payment->payable->id,
+                        'type' => strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $type)),
+                        'reference' => $reference,
+                        'name' => $name,
+                    ];
+                }
+
                 return [
                     'id' => $payment->id,
-                    'booking' => $payment->booking ? [
-                        'id' => $payment->booking->id,
-                        'booking_reference' => $payment->booking->booking_reference,
-                        'hotel' => $payment->booking->hotel ? [
-                            'name' => app()->getLocale() === 'ar' ? $payment->booking->hotel->name_ar : $payment->booking->hotel->name_en,
-                        ] : null,
-                    ] : null,
+                    'payable' => $payableData,
                     'amount' => (float) $payment->amount,
                     'payment_method' => $payment->payment_method,
                     'status' => $payment->status,
@@ -70,34 +100,51 @@ class PaymentController extends Controller
     }
 
     /**
+     * Resolve string type to full class name.
+     */
+    protected function resolvePayableType($type)
+    {
+        return match($type) {
+            'booking' => Booking::class,
+            'service_request' => \App\Models\ServiceRequest::class,
+            'event_ticket' => \App\Models\EventTicket::class,
+            default => null
+        };
+    }
+
+    /**
      * Get payment details.
      */
     public function getPaymentDetails(Payment $payment): JsonResponse
     {
-        if ($payment->booking->user_id !== Auth::id()) {
+        $payment->load('payable');
+
+        if (!$payment->payable || $payment->payable->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
                 'message' => __('api.payments.unauthorized'),
             ], 403);
         }
 
-        $payment->load(['booking', 'booking.hotel', 'booking.hotel.province']);
+        $type = class_basename($payment->payable);
+        $reference = match($type) {
+            'Booking' => $payment->payable->booking_reference,
+            'ServiceRequest' => $payment->payable->request_reference,
+            'EventTicket' => $payment->payable->ticket_reference,
+            default => '#' . $payment->payable->id
+        };
 
         return response()->json([
             'success' => true,
             'data' => [
                 'id' => $payment->id,
-                'booking' => [
-                    'id' => $payment->booking->id,
-                    'booking_reference' => $payment->booking->booking_reference,
-                    'hotel' => $payment->booking->hotel ? [
-                        'id' => $payment->booking->hotel->id,
-                        'name' => app()->getLocale() === 'ar' ? $payment->booking->hotel->name_ar : $payment->booking->hotel->name_en,
-                        'address' => app()->getLocale() === 'ar' ? $payment->booking->hotel->address_ar : $payment->booking->hotel->address_en,
-                    ] : null,
-                    'total_price' => (float) $payment->booking->total_price,
-                    'total_paid' => (float) $payment->booking->total_paid,
-                    'remaining_amount' => (float) $payment->booking->remaining_amount,
+                'payable' => [
+                    'id' => $payment->payable->id,
+                    'type' => strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $type)),
+                    'reference' => $reference,
+                    'total_price' => (float) $payment->payable->total_price,
+                    'total_paid' => (float) $payment->payable->total_paid,
+                    'remaining_amount' => (float) $payment->payable->remaining_amount,
                 ],
                 'amount' => (float) $payment->amount,
                 'payment_method' => $payment->payment_method,
@@ -117,17 +164,23 @@ class PaymentController extends Controller
     {
         try {
             $validated = $request->validate([
-                'booking_id' => 'required|exists:bookings,id',
+                'payable_type' => 'required|in:booking,service_request,event_ticket',
+                'payable_id' => 'required|integer',
                 'amount' => 'required|numeric|min:0.01',
                 'payment_method' => 'required|in:cash,card,bank_transfer,online,other',
                 'transaction_id' => 'nullable|string|max:255',
                 'notes' => 'nullable|string|max:1000',
             ]);
 
-            $booking = Booking::findOrFail($validated['booking_id']);
+            $modelClass = $this->resolvePayableType($validated['payable_type']);
+            if (!$modelClass) {
+                return response()->json(['success' => false, 'message' => 'Invalid payable type'], 400);
+            }
+
+            $payable = $modelClass::findOrFail($validated['payable_id']);
 
             // Check authorization
-            if ($booking->user_id !== Auth::id()) {
+            if ($payable->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
                     'message' => __('api.payments.unauthorized'),
@@ -135,7 +188,7 @@ class PaymentController extends Controller
             }
 
             // Check remaining amount
-            $remainingAmount = $booking->remaining_amount;
+            $remainingAmount = $payable->remaining_amount;
             if ($validated['amount'] > $remainingAmount) {
                 return response()->json([
                     'success' => false,
@@ -147,7 +200,9 @@ class PaymentController extends Controller
 
             // Create payment
             $payment = Payment::create([
-                'booking_id' => $booking->id,
+                'payable_type' => $modelClass,
+                'payable_id' => $payable->id,
+                'booking_id' => ($validated['payable_type'] === 'booking') ? $payable->id : null, 
                 'amount' => $validated['amount'],
                 'payment_method' => $validated['payment_method'],
                 'status' => 'pending',
@@ -164,13 +219,20 @@ class PaymentController extends Controller
             // Handle Online Payment via Fawaterk
             if ($validated['payment_method'] === 'online') {
                 try {
+                    $description = match($validated['payable_type']) {
+                        'booking' => "Payment for Booking #{$payable->booking_reference}",
+                        'service_request' => "Payment for Service Request #{$payable->request_reference}",
+                        'event_ticket' => "Payment for Event Ticket #{$payable->ticket_reference}",
+                        default => "Payment for Service #{$payable->id}"
+                    };
+
                     $fawaterkData = [
                         'amount' => $payment->amount,
-                        'user_name' => $booking->user->name,
-                        'user_email' => $booking->user->email,
-                        'user_phone' => $booking->user->phone ?? '01000000000', // Fallback or validate phone
-                        'payment_method_id' => $request->input('payment_method_id', 3), // Default to card (check docs)
-                        'description' => "Payment for Booking #{$booking->booking_reference}",
+                        'user_name' => $payable->user->name,
+                        'user_email' => $payable->user->email,
+                        'user_phone' => $payable->user->phone ?? '01000000000',
+                        'payment_method_id' => $request->input('payment_method_id', 3), 
+                        'description' => $description,
                     ];
 
                     $result = $this->fawaterkService->executePayment($fawaterkData);
@@ -192,7 +254,6 @@ class PaymentController extends Controller
                         $responseData['expire_date'] = $result['data']['payment_data']['expireDate'];
                         $responseData['message'] = 'Use this code to pay via Fawry';
                     } else {
-                        // Fallback: just return available payment data
                         $payment->update([
                             'transaction_id' => $result['data']['invoice_id'] ?? null,
                             'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A')
@@ -215,9 +276,9 @@ class PaymentController extends Controller
             // Notify Admins
             app(\App\Services\FirebaseNotificationService::class)->sendToAdmins(
                 "عملية دفع جديدة",
-                "قام المستخدم ({$booking->user->name}) بإضافة عملية دفع بقيمة ({$payment->amount}) للحجز ({$booking->booking_reference}).",
+                "قام المستخدم ({$payable->user->name}) بإضافة عملية دفع بقيمة ({$payment->amount}).",
                 "new_payment",
-                ['payment_id' => $payment->id, 'booking_id' => $booking->id, 'amount' => $payment->amount]
+                ['payment_id' => $payment->id, 'payable_type' => $validated['payable_type'], 'payable_id' => $payable->id, 'amount' => $payment->amount]
             );
 
             return response()->json([
@@ -262,9 +323,9 @@ class PaymentController extends Controller
                  }
             }
             
-            if ($isPaid && $payment->status !== 'success') {
+            if ($isPaid && $payment->status !== 'completed') {
                 $payment->update([
-                    'status' => 'success',
+                    'status' => 'completed',
                     'paid_at' => now(),
                     'notes' => $payment->notes . "\nVerified Success from API",
                 ]);
@@ -293,9 +354,9 @@ class PaymentController extends Controller
         
         if ($invoiceId) {
             $payment = Payment::where('transaction_id', $invoiceId)->first();
-            if ($payment && $payment->status !== 'success') {
+            if ($payment && $payment->status !== 'completed') {
                 $payment->update([
-                    'status' => 'success',
+                    'status' => 'completed',
                     'paid_at' => now(),
                 ]);
             }
@@ -318,5 +379,44 @@ class PaymentController extends Controller
     public function paymentPending(Request $request)
     {
         return response()->json(['message' => 'Payment Pending']); 
+    }
+
+    /**
+     * Handle Fawaterk Webhook (IPN).
+     */
+    public function webhook(Request $request): JsonResponse
+    {
+        Log::info('Fawaterk Webhook Received:', $request->all());
+
+        $invoiceId = $request->input('invoice_id');
+        $status = $request->input('payment_status') ?? $request->input('invoice_status'); // Handle both common field names
+
+        if (!$invoiceId) {
+            return response()->json(['success' => false, 'message' => 'Missing invoice_id'], 400);
+        }
+
+        $payment = Payment::where('transaction_id', $invoiceId)->first();
+
+        if (!$payment) {
+            Log::warning("Fawaterk Webhook: Payment not found for Invoice ID: $invoiceId");
+            return response()->json(['success' => false, 'message' => 'Payment not found'], 404);
+        }
+
+        if ($status === 'paid' && $payment->status !== 'completed') {
+            $payment->update([
+                'status' => 'completed',
+                'paid_at' => now(),
+                'notes' => $payment->notes . "\nWebhook: Paid successfully."
+            ]);
+            Log::info("Payment #{$payment->id} marked as success via webhook.");
+        } elseif ($status === 'failed') {
+            $payment->update([
+                'status' => 'failed',
+                'notes' => $payment->notes . "\nWebhook: Payment failed."
+            ]);
+            Log::info("Payment #{$payment->id} marked as failed via webhook.");
+        }
+
+        return response()->json(['success' => true]);
     }
 }

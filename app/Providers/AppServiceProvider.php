@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,5 +28,12 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.url') && str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
+
+        // Define morph map for polymorphic relations
+        Relation::morphMap([
+            'booking' => \App\Models\Booking::class,
+            'service_request' => \App\Models\ServiceRequest::class,
+            'event_ticket' => \App\Models\EventTicket::class,
+        ]);
     }
 }

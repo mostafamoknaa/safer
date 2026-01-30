@@ -73,11 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookings', [\App\Http\Controllers\Api\BookingController::class, 'createBooking']);
     Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancelBooking']);
 
-    // Payments routes
+    // Payments routes`
     Route::get('/payments/verify', [\App\Http\Controllers\Api\PaymentController::class, 'verifyPayment'])->name('api.payments.verify');
     Route::get('/payments/callback/success', [\App\Http\Controllers\Api\PaymentController::class, 'paymentSuccess'])->name('api.payments.callback.success');
     Route::get('/payments/callback/fail', [\App\Http\Controllers\Api\PaymentController::class, 'paymentFail'])->name('api.payments.callback.fail');
     Route::get('/payments/callback/pending', [\App\Http\Controllers\Api\PaymentController::class, 'paymentPending'])->name('api.payments.callback.pending');
+    Route::post('/payments/webhook_json', [\App\Http\Controllers\Api\PaymentController::class, 'webhook'])->name('api.payments.webhook');
     
     Route::get('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'getUserPayments']);
     Route::post('/payments', [\App\Http\Controllers\Api\PaymentController::class, 'createPayment']);
@@ -169,3 +170,12 @@ Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::
 // Explore places
 Route::get('/explore/popular', [\App\Http\Controllers\Api\ExploreController::class, 'getPopularPlaces']);
 Route::get('/explore/nearby', [\App\Http\Controllers\Api\ExploreController::class, 'getNearbyPlaces']);
+
+
+
+    // Payments routes`
+    Route::get('/payments/verify', [\App\Http\Controllers\Api\PaymentController::class, 'verifyPayment'])->name('api.payments.verify');
+    Route::get('/payments/callback/success', [\App\Http\Controllers\Api\PaymentController::class, 'paymentSuccess'])->name('api.payments.callback.success');
+    Route::get('/payments/callback/fail', [\App\Http\Controllers\Api\PaymentController::class, 'paymentFail'])->name('api.payments.callback.fail');
+    Route::get('/payments/callback/pending', [\App\Http\Controllers\Api\PaymentController::class, 'paymentPending'])->name('api.payments.callback.pending');
+    Route::post('/payments/webhook_json', [\App\Http\Controllers\Api\PaymentController::class, 'webhook'])->name('api.payments.webhook');

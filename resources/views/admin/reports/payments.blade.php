@@ -153,24 +153,47 @@
                 <tbody class="divide-y divide-slate-100 bg-white">
                     @forelse($payments as $payment)
                         <tr>
+                        @if($payment->payable)
+                            @php
+                                $payable = $payment->payable;
+                                 $reference = match(class_basename($payable)) {
+                                    'Booking' => $payable->booking_reference,
+                                    'ServiceRequest' => $payable->request_reference,
+                                    'EventTicket' => $payable->ticket_reference,
+                                    default => '#' . $payable->id
+                                };
+                                $name = match(true) {
+                                    $payable instanceof \App\Models\Booking && $payable->hotel => (app()->getLocale() === 'ar' ? $payable->hotel->name_ar : $payable->hotel->name_en),
+                                    $payable instanceof \App\Models\ServiceRequest => ($payable->service_type === 'bus' ? 'Bus Service' : 'Private Car'),
+                                    $payable instanceof \App\Models\EventTicket && $payable->event => (app()->getLocale() === 'ar' ? $payable->event->name_ar : $payable->event->name_en),
+                                    default => '-'
+                                };
+                            @endphp
                             <td class="px-4 py-3 font-mono text-xs text-slate-600">
-                                {{ $payment->booking?->booking_reference ?? '-' }}
+                                {{ $reference }}
                             </td>
                             <td class="px-4 py-3 text-slate-800">
-                                {{ $payment->booking?->user?->name ?? '-' }}
+                                {{ $payable->user?->name ?? '-' }}
                             </td>
                             <td class="px-4 py-3 text-slate-700">
-                                {{ $payment->booking?->hotel ? (app()->getLocale() === 'ar' ? $payment->booking->hotel->name_ar : $payment->booking->hotel->name_en) : '-' }}
+                                {{ $name }}
                             </td>
+                        @else
+                            <td class="px-4 py-3">-</td>
+                            <td class="px-4 py-3">-</td>
+                            <td class="px-4 py-3">-</td>
+                        @endif
                             <td class="px-4 py-3 font-semibold text-slate-900">
                                 {{ number_format($payment->amount, 2) }} {{ __('admin.payments.currency') }}
                             </td>
                             @php
                                 $commissionRate = 0;
-                                if ($payment->booking?->hotel) {
-                                    $commissionRate = $payment->booking->hotel->type === 'hotel_apartment' 
-                                        ? ($settings->apartment_commission ?? 0) 
-                                        : ($settings->hotel_commission ?? 0);
+                                if ($payment->payable instanceof \App\Models\Booking && $payment->payable->hotel) {
+                                    $commissionRate = $payment->payable->hotel->type === 'hotel_apartment' ? ($settings->apartment_commission ?? 0) : ($settings->hotel_commission ?? 0);
+                                } elseif ($payment->payable instanceof \App\Models\ServiceRequest) {
+                                    $commissionRate = $payment->payable->service_type === 'bus' ? ($settings->bus_commission ?? 0) : (($payment->payable->booking_type === 'hourly') ? ($settings->car_hour_commission ?? 0) : ($settings->car_day_commission ?? 0));
+                                } elseif ($payment->payable instanceof \App\Models\EventTicket) {
+                                    $commissionRate = $settings->activity_commission ?? 0;
                                 }
                                 $commissionValue = ($payment->amount * $commissionRate) / 100;
                                 $netValue = $payment->amount - $commissionValue;

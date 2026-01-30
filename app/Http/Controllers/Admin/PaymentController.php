@@ -16,7 +16,7 @@ class PaymentController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Payment::with(['booking.user', 'booking.hotel'])
+        $query = Payment::with(['payable'])
             ->orderByDesc('created_at');
 
         // Filter by status
@@ -29,22 +29,23 @@ class PaymentController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
-        // Filter by booking
-        if ($request->filled('booking_id')) {
-            $query->where('booking_id', $request->booking_id);
-        }
-
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('transaction_id', 'like', "%{$search}%")
-                    ->orWhereHas('booking', function ($q) use ($search) {
-                        $q->where('booking_reference', 'like', "%{$search}%")
-                            ->orWhereHas('user', function ($q) use ($search) {
-                                $q->where('name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                            });
+                    ->orWhereHasMorph('payable', [Booking::class, \App\Models\ServiceRequest::class, \App\Models\EventTicket::class], function ($q, $type) use ($search) {
+                        if ($type === Booking::class) {
+                            $q->where('booking_reference', 'like', "%{$search}%");
+                        } elseif ($type === \App\Models\ServiceRequest::class) {
+                            $q->where('request_reference', 'like', "%{$search}%");
+                        } elseif ($type === \App\Models\EventTicket::class) {
+                            $q->where('ticket_reference', 'like', "%{$search}%");
+                        }
+                        $q->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
                     });
             });
         }
@@ -115,7 +116,13 @@ class PaymentController extends Controller
      */
     public function show(Payment $payment): View
     {
-        $payment->load(['booking.user', 'booking.hotel', 'booking.room', 'booking.payments']);
+        $payment->load(['payable.user', 'payable.payments']);
+        
+        if ($payment->payable instanceof Booking) {
+            $payment->payable->load(['hotel', 'room']);
+        } elseif ($payment->payable instanceof \App\Models\EventTicket) {
+            $payment->payable->load('event');
+        }
 
         return view('admin.payments.show', compact('payment'));
     }

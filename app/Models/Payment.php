@@ -12,6 +12,8 @@ class Payment extends Model
 
     protected $fillable = [
         'booking_id',
+        'payable_type',
+        'payable_id',
         'amount',
         'payment_method',
         'status',
@@ -26,7 +28,15 @@ class Payment extends Model
     ];
 
     /**
-     * Get the booking for this payment.
+     * Get the payable entity (Booking, ServiceRequest, or EventTicket).
+     */
+    public function payable()
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * Get the booking for this payment (Legacy support).
      */
     public function booking(): BelongsTo
     {

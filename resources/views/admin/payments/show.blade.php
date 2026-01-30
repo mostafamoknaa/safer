@@ -13,11 +13,13 @@
                     <p class="text-sm text-slate-500 mt-1">{{ __('admin.payments.show_subheading') }}</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('admin.bookings.show', $payment->booking) }}"
-                       class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
-                        <i class="fas fa-arrow-right"></i>
-                        {{ __('admin.bookings.show_title') }}
-                    </a>
+                    @if($payment->payable instanceof \App\Models\Booking)
+                        <a href="{{ route('admin.bookings.show', $payment->payable) }}"
+                           class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
+                            <i class="fas fa-arrow-right"></i>
+                            {{ __('admin.bookings.show_title') }}
+                        </a>
+                    @endif
                     <a href="{{ route('admin.payments.index') }}"
                        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
                         <i class="fas fa-list"></i>
@@ -29,10 +31,22 @@
             <div class="grid gap-6 md:grid-cols-2">
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-medium uppercase text-slate-500">{{ __('admin.payments.table.booking') }}</label>
+                        <label class="text-xs font-medium uppercase text-slate-500">الخدمة المرتبطة</label>
                         <div class="mt-1">
-                            <p class="font-semibold text-slate-900">{{ $payment->booking->booking_reference }}</p>
-                            <p class="text-sm text-slate-500">{{ $payment->booking->user->name }}</p>
+                            @if($payment->payable)
+                                @php
+                                    $reference = match(class_basename($payment->payable)) {
+                                        'Booking' => $payment->payable->booking_reference,
+                                        'ServiceRequest' => $payment->payable->request_reference,
+                                        'EventTicket' => $payment->payable->ticket_reference,
+                                        default => '#' . $payment->payable->id
+                                    };
+                                @endphp
+                                <p class="font-semibold text-slate-900">{{ $reference }}</p>
+                                <p class="text-sm text-slate-500">{{ $payment->payable->user?->name ?? '-' }}</p>
+                            @else
+                                <p class="text-slate-500">-</p>
+                            @endif
                         </div>
                     </div>
 

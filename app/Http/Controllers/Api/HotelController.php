@@ -560,27 +560,46 @@ class HotelController extends Controller
      */
       public function filterHotels(Request $request): JsonResponse
       {
-        
           $user = auth('sanctum')->user();
           $favoriteIds = [];
           if ($user) {
               $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
           }
+
+          $checkIn = $request->check_in;
+          $checkOut = $request->check_out;
+          
           $query = Hotel::with([
                   'province',
                   'media',
                   'managers',
                   'user',
                   'reviews.user',
-                  'rooms' => function ($q) {
-                      $q->where('is_active', true)->with('media');
+                  'rooms' => function ($q) use ($checkIn, $checkOut) {
+                      $q->where('is_active', true);
+                      
+                      // Filter rooms by availability if dates are provided
+                      if ($checkIn && $checkOut) {
+                          $q->whereDoesntHave('bookings', function ($bq) use ($checkIn, $checkOut) {
+                              $bq->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                                 ->where(function ($sub) use ($checkIn, $checkOut) {
+                                     $sub->whereBetween('check_in_date', [$checkIn, $checkOut])
+                                         ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
+                                         ->orWhere(function ($inn) use ($checkIn, $checkOut) {
+                                             $inn->where('check_in_date', '<=', $checkIn)
+                                                 ->where('check_out_date', '>=', $checkOut);
+                                         });
+                                 });
+                          });
+                      }
+                      $q->with('media');
                   }
               ])
               ->where('is_active', true);
 
           // Filter by country
           if ($request->filled('country')) {
-              $query->where('country', $request->country);
+              $query->where('country', 'like', "%{$request->country}%");
           }
 
           // Filter by rating
@@ -593,24 +612,34 @@ class HotelController extends Controller
               $query->where('type', $request->type);
           }
 
-          // Filter by people count
+          // Filter by people count (Hotel must have at least one room that fits)
           if ($request->filled('people_count')) {
               $peopleCount = $request->people_count;
-              $query->whereHas('rooms', function ($q) use ($peopleCount) {
+              $query->whereHas('rooms', function ($q) use ($peopleCount, $checkIn, $checkOut) {
                   $q->where('is_active', true)
                     ->where('max_people', '>=', $peopleCount);
+                  
+                  if ($checkIn && $checkOut) {
+                      $q->whereDoesntHave('bookings', function ($bq) use ($checkIn, $checkOut) {
+                          $bq->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                             ->where(function ($sub) use ($checkIn, $checkOut) {
+                                 $sub->whereBetween('check_in_date', [$checkIn, $checkOut])
+                                     ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
+                                     ->orWhere(function ($inn) use ($checkIn, $checkOut) {
+                                         $inn->where('check_in_date', '<=', $checkIn)
+                                             ->where('check_out_date', '>=', $checkOut);
+                                     });
+                             });
+                      });
+                  }
               });
           }
 
           // Filter by services
           if ($request->filled('services')) {
-              $services = is_array($request->services)
-                  ? $request->services
-                  : [$request->services];
-
+              $services = is_array($request->services) ? $request->services : explode(',', $request->services);
               foreach ($services as $service) {
-                  $query->where('services', 'LIKE', '%"id": ' . $service . ',%')
-                        ->orWhere('services', 'LIKE', '%"id":' . $service . ',%');
+                  $query->where('services', 'LIKE', "%{$service}%");
               }
           }
 
@@ -619,146 +648,125 @@ class HotelController extends Controller
               $search = $request->search;
               $query->where(function ($q) use ($search) {
                   $q->where('name_ar', 'like', "%{$search}%")
-                    ->orWhere('name_en', 'like', "%{$search}%");
+                    ->orWhere('name_en', 'like', "%{$search}%")
+                    ->orWhere('address_ar', 'like', "%{$search}%")
+                    ->orWhere('address_en', 'like', "%{$search}%");
               });
           }
 
-          $hotels = $query->get()
-              ->filter(function ($hotel) use ($request) {
-                  if ($request->filled('min_price') || $request->filled('max_price')) {
-                      $minPrice = $hotel->rooms->min('price_per_night');
-                      $maxPrice = $hotel->rooms->max('price_per_night');
+          // Execute query and filter by price & availability logic
+          $hotels = $query->get()->filter(function ($hotel) use ($request, $checkIn, $checkOut) {
+              // If dates provided, hotel MUST have available rooms
+              if ($checkIn && $checkOut && $hotel->rooms->isEmpty()) {
+                  return false;
+              }
 
-                      if ($request->filled('min_price') && $maxPrice < $request->min_price) {
-                          return false;
-                      }
+              if ($request->filled('min_price') || $request->filled('max_price')) {
+                  $minRoomPrice = $hotel->rooms->min('price_per_night');
+                  $maxRoomPrice = $hotel->rooms->max('price_per_night');
 
-                      if ($request->filled('max_price') && $minPrice > $request->max_price) {
-                          return false;
-                      }
+                  if ($request->filled('min_price') && ($maxRoomPrice < $request->min_price)) {
+                      return false;
                   }
-                  return true;
-              })->map(function ($hotel) use ($favoriteIds) {
-                  $minPrice = $hotel->rooms->min('price_per_night');
-                  $maxPrice = $hotel->rooms->max('price_per_night');
 
-                  $rooms = $hotel->rooms->map(function ($room) {
-                      $roomImages = $room->media->where('type', 'image')->map(function ($media) {
-                           return $media->file_url;
-                      })->values();
+                  if ($request->filled('max_price') && ($minRoomPrice > $request->max_price)) {
+                      return false;
+                  }
+              }
+              return true;
+          });
 
+          // Sorting
+          $sortBy = $request->input('sort_by', 'name'); // default sort
+          $sortOrder = $request->input('sort_order', 'asc');
+
+          if ($sortBy === 'price') {
+              $hotels = ($sortOrder === 'desc') 
+                  ? $hotels->sortByDesc(fn($h) => $h->rooms->min('price_per_night'))
+                  : $hotels->sortBy(fn($h) => $h->rooms->min('price_per_night'));
+          } elseif ($sortBy === 'rating') {
+              $hotels = ($sortOrder === 'desc') ? $hotels->sortByDesc('rate') : $hotels->sortBy('rate');
+          } elseif ($sortBy === 'name') {
+              $field = app()->getLocale() === 'ar' ? 'name_ar' : 'name_en';
+              $hotels = ($sortOrder === 'desc') ? $hotels->sortByDesc($field) : $hotels->sortBy($field);
+          }
+
+          $results = $hotels->values()->map(function ($hotel) use ($favoriteIds, $checkIn, $checkOut) {
+              $minPrice = $hotel->rooms->min('price_per_night');
+              $maxPrice = $hotel->rooms->max('price_per_night');
+
+              $rooms = $hotel->rooms->map(function ($room) use ($checkIn, $checkOut) {
+                  $roomImages = $room->media->where('type', 'image')->map(fn($m) => $m->file_url)->values();
+
+                  $isAvailable = true;
+                  if ($checkIn && $checkOut) {
+                      // Already filtered by query for rooms, but let's confirm status
                       $isAvailable = !$room->bookings()
                           ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
-                          ->where('check_in_date', '<=', now()->addDays(30))
-                          ->where('check_out_date', '>=', now())
-                          ->exists();
-
-                      return [
-                          'id' => $room->id,
-                          'name' => $room->name ?? 'Room ' . $room->id,
-                          'type' => $room->type ?? 'standard',
-                          'price_per_night' => (float) $room->price_per_night,
-                          'max_people' => $room->max_people,
-                          'cleaning_fee' => (float) ($room->cleaning_fee ?? 0),
-                          'service_fee' => (float) ($room->service_fee ?? 0),
-                          'beds_count' => $room->beds_count,
-                          'bathrooms_count' => $room->bathrooms_count,
-                          'rooms_count' => $room->rooms_count,
-                          'services' => $room->services ?? [],
-                          'is_available' => $isAvailable,
-                          'rating' => 4.5,
-                          'images' => $roomImages,
-                      ];
-                  });
-
-                  $images = $hotel->media->where('type', 'image')->map(function ($media) {
-                      return [
-                          'url' => $media->file_url,
-                          'order' => $media->order_column,
-                      ];
-                  })->sortBy('order')->values();
-
-                  $videos = $hotel->media->where('type', 'video')->map(function ($media) {
-                      return [
-                          'url' => $media->file_url,
-                          'order' => $media->order_column,
-                      ];
-                  })->sortBy('order')->values();
-
-                  $managers = collect();
-                  if ($hotel->user) {
-                      $managers->push([
-                          'id' => $hotel->user->id,
-                          'name' => $hotel->user->name,
-                          'email' => $hotel->user->email,
-                          'phone' => $hotel->user->phone,
-                          'image' => $hotel->user->image,
-                          'role' => 'owner',
-                      ]);
+                          ->where(function ($q) use ($checkIn, $checkOut) {
+                              $q->whereBetween('check_in_date', [$checkIn, $checkOut])
+                                ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
+                                ->orWhere(function ($sub) use ($checkIn, $checkOut) {
+                                    $sub->where('check_in_date', '<=', $checkIn)
+                                        ->where('check_out_date', '>=', $checkOut);
+                                });
+                          })->exists();
                   }
-                  $hotel->managers->each(function ($manager) use ($managers) {
-                      $managers->push([
-                          'id' => $manager->id,
-                          'name' => $manager->name,
-                          'email' => $manager->email,
-                          'phone' => $manager->phone,
-                          'image' => $manager->image,
-                          'role' => 'manager',
-                      ]);
-                  });
-
-                  $reviews = $hotel->reviews->take(10)->map(function ($review) {
-                      return [
-                          'id' => $review->id,
-                          'user' => [
-                              'name' => $review->user->name,
-                              'photo' => $review->user->image ?? null,
-                          ],
-                          'rating' => $review->rating,
-                          'comment' => $review->comment,
-                          'created_at' => $review->created_at->format('Y-m-d'),
-                      ];
-                  });
 
                   return [
-                      'id' => $hotel->id,
-                      'name_ar' => $hotel->name_ar,
-                      'name_en' => $hotel->name_en,
-                      'address_ar' => $hotel->address_ar,
-                      'address_en' => $hotel->address_en,
-                      'lat' => $hotel->lat ? (float) $hotel->lat : null,
-                      'lang' => $hotel->lang ? (float) $hotel->lang : null,
-                      'type' => $hotel->type,
-                      'rating' => $hotel->average_rating ? round($hotel->average_rating, 1) : null,
-                      'reviews_count' => $hotel->reviews_count,
-                      'services' => $hotel->services ?? [],
-                      'is_favorite' => in_array($hotel->id, $favoriteIds),
-                      'province' => $hotel->province ? [
-                          'id' => $hotel->province->id,
-                          'name' => app()->getLocale() === 'ar' ? $hotel->province->name_ar : $hotel->province->name_en,
-                      ] : null,
-                      'website_url' => $hotel->website_url,
-                      'about_info' => app()->getLocale() === 'ar' ? $hotel->about_info_ar : $hotel->about_info_en,
-                      'price' => ($minPrice !== null && $maxPrice !== null)
-                          ? [
-                              'min' => (float) $minPrice,
-                              'max' => (float) $maxPrice,
-                          ]
-                          : null,
-                      'owner' => $managers,
-                      'images' => $images,
-                      'videos' => $videos,
-                      'rooms' => $rooms,
-                      'reviews' => $reviews,
+                      'id' => $room->id,
+                      'name' => $room->name ?? 'Room ' . $room->id,
+                      'type' => $room->type ?? 'standard',
+                      'price_per_night' => (float) $room->price_per_night,
+                      'max_people' => $room->max_people,
+                      'beds_count' => $room->beds_count,
+                      'bathrooms_count' => $room->bathrooms_count,
+                      'rooms_count' => $room->rooms_count,
+                      'services' => $room->services ?? [],
+                      'is_available' => $isAvailable,
+                      'images' => $roomImages,
                   ];
-              })
-              ->values();
+              });
+
+              $images = $hotel->media->where('type', 'image')->map(fn($m) => [
+                  'url' => $m->file_url,
+                  'order' => $m->order_column,
+              ])->sortBy('order')->values();
+
+              $managers = collect();
+              if ($hotel->user) {
+                  $managers->push([
+                      'id' => $hotel->user->id,
+                      'name' => $hotel->user->name,
+                      'role' => 'owner',
+                  ]);
+              }
+
+              return [
+                  'id' => $hotel->id,
+                  'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
+                  'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                  'lat' => (float) $hotel->lat,
+                  'lang' => (float) $hotel->lang,
+                  'type' => $hotel->type,
+                  'rating' => (float) $hotel->rate,
+                  'reviews_count' => $hotel->reviews_count,
+                  'services' => $hotel->services ?? [],
+                  'is_favorite' => in_array($hotel->id, $favoriteIds),
+                  'price' => [
+                      'min' => (float) $minPrice,
+                      'max' => (float) $maxPrice,
+                  ],
+                  'images' => $images,
+                  'rooms' => $rooms,
+              ];
+          });
 
           return response()->json([
               'success' => true,
-              'data' => $hotels,
+              'data' => $results,
           ]);
-    }
+      }
 
     /**
      * Get nearest hotels sorted by distance.
