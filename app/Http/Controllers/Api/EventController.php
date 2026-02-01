@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
 {
+    use \App\Traits\HandlesPayments;
+
     /**
      * Get available events.
      */
@@ -147,6 +149,8 @@ class EventController extends Controller
                 'event_id' => 'required|exists:events,id',
                 'tickets_count' => 'required|integer|min:1|max:100',
                 'notes' => 'nullable|string|max:1000',
+                'payment_method' => 'nullable|in:cash,card,bank_transfer,online,other',
+                'payment_method_id' => 'nullable|integer',
             ]);
 
             $event = Event::findOrFail($validated['event_id']);
@@ -182,14 +186,24 @@ class EventController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            $paymentData = null;
+            if ($request->filled('payment_method')) {
+                $paymentData = $this->initiatePayment(
+                    $ticket, 
+                    $totalPrice, 
+                    $request->payment_method, 
+                    $request->payment_method_id
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.events.tickets_purchased'),
                 'data' => [
-                    'ticket_id' => $ticket->id,
+                    'id' => $ticket->id,
                     'ticket_reference' => $ticket->ticket_reference,
-                    'tickets_count' => $ticket->tickets_count,
                     'total_price' => $totalPrice,
+                    'payment' => $paymentData,
                 ],
             ], 201);
 

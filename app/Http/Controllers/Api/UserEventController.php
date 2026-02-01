@@ -40,6 +40,7 @@ class UserEventController extends Controller
             'available_tickets' => 'required|integer|min:1',
             'description_ar' => 'nullable|string',
             'description_en' => 'nullable|string',
+            'cancellation_policy' => 'nullable|array',
             'activity_images' => 'nullable|array|max:5',
             'activity_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
@@ -87,6 +88,7 @@ class UserEventController extends Controller
             'available_tickets' => 'integer|min:1',
             'description_ar' => 'nullable|string',
             'description_en' => 'nullable|string',
+            'cancellation_policy' => 'nullable|array',
             'is_active' => 'boolean',
             'activity_images' => 'nullable|array|max:5',
             'activity_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',

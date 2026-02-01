@@ -27,6 +27,7 @@ class PrivateCar extends Model
         'notes_en',
         'is_active',
         'user_id',
+        'cancellation_policy',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class PrivateCar extends Model
         'acceleration' => 'decimal:2',
         'power' => 'integer',
         'is_active' => 'boolean',
+        'cancellation_policy' => 'array',
     ];
 
     /**

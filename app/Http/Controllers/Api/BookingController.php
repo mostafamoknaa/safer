@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
 {
+    use \App\Traits\HandlesPayments;
+
     /**
      * Get user bookings.
      */
@@ -294,6 +296,8 @@ class BookingController extends Controller
                 'infants_count' => 'nullable|integer|min:0|max:100',
                 'voucher_code' => 'nullable|string|exists:vouchers,code',
                 'notes' => 'nullable|string|max:1000',
+                'payment_method' => 'nullable|in:cash,card,bank_transfer,online,other',
+                'payment_method_id' => 'nullable|integer',
             ]);
 
             $validated['guests_count'] = $validated['adults_count'] + $validated['young_count']*0.5;
@@ -446,6 +450,16 @@ class BookingController extends Controller
                 ['booking_id' => $booking->id, 'reference' => $booking->booking_reference]
             );
 
+            $paymentData = null;
+            if ($request->filled('payment_method')) {
+                $paymentData = $this->initiatePayment(
+                    $booking, 
+                    $finalPrice, 
+                    $request->payment_method, 
+                    $request->payment_method_id
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.bookings.created'),
@@ -457,6 +471,7 @@ class BookingController extends Controller
                     'final_price' => $finalPrice,
                     'nights' => $nights,
                     'rooms_booked' => count($validated['room_ids']),
+                    'payment' => $paymentData,
                 ],
             ], 201);
 

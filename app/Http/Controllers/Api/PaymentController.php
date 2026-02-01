@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    use \App\Traits\HandlesPayments;
+
     protected $fawaterkService;
 
     public function __construct(FawaterkService $fawaterkService)
@@ -198,93 +200,34 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Create payment
-            $payment = Payment::create([
-                'payable_type' => $modelClass,
-                'payable_id' => $payable->id,
-                'booking_id' => ($validated['payable_type'] === 'booking') ? $payable->id : null, 
-                'amount' => $validated['amount'],
-                'payment_method' => $validated['payment_method'],
-                'status' => 'pending',
-                'transaction_id' => $validated['transaction_id'] ?? null,
-                'notes' => $validated['notes'] ?? null,
-            ]);
-
-            $responseData = [
-                'id' => $payment->id,
-                'amount' => (float) $payment->amount,
-                'remaining_amount' => (float) ($remainingAmount - $payment->amount),
-            ];
-
-            // Handle Online Payment via Fawaterk
-            if ($validated['payment_method'] === 'online') {
-                try {
-                    $description = match($validated['payable_type']) {
-                        'booking' => "Payment for Booking #{$payable->booking_reference}",
-                        'service_request' => "Payment for Service Request #{$payable->request_reference}",
-                        'event_ticket' => "Payment for Event Ticket #{$payable->ticket_reference}",
-                        default => "Payment for Service #{$payable->id}"
-                    };
-
-                    $fawaterkData = [
-                        'amount' => $payment->amount,
-                        'user_name' => $payable->user->name,
-                        'user_email' => $payable->user->email,
-                        'user_phone' => $payable->user->phone ?? '01000000000',
-                        'payment_method_id' => $request->input('payment_method_id', 3), 
-                        'description' => $description,
-                    ];
-
-                    $result = $this->fawaterkService->executePayment($fawaterkData);
-
-                    if (isset($result['data']['payment_data']['redirectTo'])) {
-                        $payment->update([
-                            'transaction_id' => $result['data']['invoice_id'] ?? null, 
-                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A')
-                        ]);
-                        
-                        $responseData['payment_url'] = $result['data']['payment_data']['redirectTo'];
-                    } elseif (isset($result['data']['payment_data']['fawryCode'])) {
-                         $payment->update([
-                            'transaction_id' => $result['data']['invoice_id'] ?? null, 
-                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A') . "\nFawry Code: " . $result['data']['payment_data']['fawryCode']
-                        ]);
-                        
-                        $responseData['fawry_code'] = $result['data']['payment_data']['fawryCode'];
-                        $responseData['expire_date'] = $result['data']['payment_data']['expireDate'];
-                        $responseData['message'] = 'Use this code to pay via Fawry';
-                    } else {
-                        $payment->update([
-                            'transaction_id' => $result['data']['invoice_id'] ?? null,
-                            'notes' => 'Fawaterk Invoice ID: ' . ($result['data']['invoice_id'] ?? 'N/A')
-                        ]);
-                        $responseData['payment_data'] = $result['data']['payment_data'] ?? [];
-                    }
-
-                } catch (\Exception $e) {
-                    $payment->update(['status' => 'failed', 'notes' => 'Failed to init online payment: ' . $e->getMessage()]);
-                    Log::error("Fawaterk Init Error: " . $e->getMessage());
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Online payment initiation failed.',
-                        'error' => $e->getMessage(),
-                    ], 500);
-                }
-            }
+            // Initiate Payment via Trait
+            $paymentData = $this->initiatePayment(
+                $payable, 
+                $validated['amount'], 
+                $validated['payment_method'], 
+                $request->payment_method_id, 
+                $validated['notes']
+            );
 
             // Notify Admins
             app(\App\Services\FirebaseNotificationService::class)->sendToAdmins(
                 "عملية دفع جديدة",
-                "قام المستخدم ({$payable->user->name}) بإضافة عملية دفع بقيمة ({$payment->amount}).",
+                "قام المستخدم ({$payable->user->name}) بإضافة عملية دفع بقيمة ({$validated['amount']}).",
                 "new_payment",
-                ['payment_id' => $payment->id, 'payable_type' => $validated['payable_type'], 'payable_id' => $payable->id, 'amount' => $payment->amount]
+                [
+                    'payment_id' => $paymentData['payment_id'], 
+                    'payable_type' => $validated['payable_type'], 
+                    'payable_id' => $payable->id, 
+                    'amount' => $validated['amount']
+                ]
             );
 
             return response()->json([
                 'success' => true,
                 'message' => __('api.payments.created'),
-                'data' => $responseData,
+                'data' => array_merge([
+                    'remaining_amount' => (float) ($remainingAmount - $validated['amount']),
+                ], $paymentData),
             ], 201);
 
         } catch (ValidationException $e) {

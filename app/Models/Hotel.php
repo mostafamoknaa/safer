@@ -40,6 +40,7 @@ class Hotel extends Model
         'booking_settings',
         'week_schedule',
         'blocked_dates',
+        'cancellation_policy',
     ];
 
     protected $casts = [
@@ -55,6 +56,7 @@ class Hotel extends Model
         'booking_settings' => 'array',
         'week_schedule' => 'array',
         'blocked_dates' => 'array',
+        'cancellation_policy' => 'array',
     ];
 
     public function user(): BelongsTo

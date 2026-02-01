@@ -34,6 +34,7 @@ class Event extends Model
         'cancellation_hours',
         'activity_images',
         'id_images',
+        'cancellation_policy',
     ];
 
     protected $casts = [
@@ -48,6 +49,7 @@ class Event extends Model
         'allow_cancellation' => 'boolean',
         'activity_images' => 'array',
         'id_images' => 'array',
+        'cancellation_policy' => 'array',
     ];
 
     /**

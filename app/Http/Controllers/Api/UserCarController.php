@@ -62,6 +62,7 @@ class UserCarController extends Controller
             'power' => 'required|integer|min:0',
             'notes_ar' => 'nullable|string',
             'notes_en' => 'nullable|string',
+            'cancellation_policy' => 'nullable|array',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
@@ -114,6 +115,7 @@ class UserCarController extends Controller
             'power' => 'integer|min:0',
             'notes_ar' => 'nullable|string',
             'notes_en' => 'nullable|string',
+            'cancellation_policy' => 'nullable|array',
             'is_active' => 'boolean',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',

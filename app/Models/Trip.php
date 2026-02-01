@@ -23,6 +23,7 @@ class Trip extends Model
         'duration_minutes',
         'is_active',
         'user_id',
+        'cancellation_policy',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class Trip extends Model
         'price' => 'decimal:2',
         'duration_minutes' => 'integer',
         'is_active' => 'boolean',
+        'cancellation_policy' => 'array',
     ];
 
     /**

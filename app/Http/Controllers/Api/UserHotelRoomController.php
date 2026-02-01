@@ -33,6 +33,7 @@ class UserHotelRoomController extends Controller
             'cleaning_fee' => 'nullable',
             'service_fee' => 'nullable',
             'name' => 'required|string',
+            'cancellation_policy' => 'nullable|array',
         ]);
 
         $validated['hotel_id'] = $hotel->id;
@@ -96,6 +97,7 @@ class UserHotelRoomController extends Controller
             'cleaning_fee' => 'nullable',
             'service_fee' => 'nullable',
             'name' => 'required|string',
+            'cancellation_policy' => 'nullable|array',
         ]);
 
         $room->update($validated);

@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class ServiceController extends Controller
 {
+    use \App\Traits\HandlesPayments;
+
     /**
      * Get master services.
      */
@@ -208,6 +210,8 @@ class ServiceController extends Controller
                 'selected_seats' => 'nullable|array|max:100',
                 'selected_seats.*' => 'integer|min:1',
                 'notes' => 'nullable|string|max:1000',
+                'payment_method' => 'nullable|in:cash,card,bank_transfer,online,other',
+                'payment_method_id' => 'nullable|integer',
             ]);
 
             $trip = Trip::with('bus')->findOrFail($validated['trip_id']);
@@ -278,6 +282,16 @@ class ServiceController extends Controller
                 }
             }
 
+            $paymentData = null;
+            if ($request->filled('payment_method')) {
+                $paymentData = $this->initiatePayment(
+                    $serviceRequest, 
+                    $totalPrice, 
+                    $request->payment_method, 
+                    $request->payment_method_id
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.services.request_created'),
@@ -285,6 +299,7 @@ class ServiceController extends Controller
                     'request_id' => $serviceRequest->id,
                     'request_reference' => $serviceRequest->request_reference,
                     'total_price' => $totalPrice,
+                    'payment' => $paymentData,
                 ],
             ], 201);
 
@@ -310,6 +325,8 @@ class ServiceController extends Controller
                 'start_date' => 'required|date|after_or_equal:today',
                 'start_time' => 'required_if:booking_type,hours|date_format:H:i',
                 'notes' => 'nullable|string|max:1000',
+                'payment_method' => 'nullable|in:cash,card,bank_transfer,online,other',
+                'payment_method_id' => 'nullable|integer',
             ]);
 
             $car = PrivateCar::findOrFail($validated['private_car_id']);
@@ -356,6 +373,16 @@ class ServiceController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            $paymentData = null;
+            if ($request->filled('payment_method')) {
+                $paymentData = $this->initiatePayment(
+                    $serviceRequest, 
+                    $totalPrice, 
+                    $request->payment_method, 
+                    $request->payment_method_id
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => __('api.services.request_created'),
@@ -364,6 +391,7 @@ class ServiceController extends Controller
                     'request_reference' => $serviceRequest->request_reference,
                     'total_price' => $totalPrice,
                     'end_datetime' => $endDateTime,
+                    'payment' => $paymentData,
                 ],
             ], 201);
 

@@ -27,6 +27,7 @@ class HotelRoom extends Model
         'blocked_slots',
         'services',
         'max_people',
+        'cancellation_policy',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class HotelRoom extends Model
         'is_active' => 'boolean',
         'blocked_slots' => 'array',
         'services' => 'array',
+        'cancellation_policy' => 'array',
     ];
 
     public function hotel(): BelongsTo

@@ -65,6 +65,7 @@ class UserTripController extends Controller
             'trip_date' => 'required|date',
             'trip_time' => 'required',
             'duration_minutes' => 'required|integer|min:1',
+            'cancellation_policy' => 'nullable|array',
         ]);
 
         // Verify bus ownership
@@ -107,6 +108,7 @@ class UserTripController extends Controller
             'trip_date' => 'date',
             'trip_time' => 'string',
             'duration_minutes' => 'integer|min:1',
+            'cancellation_policy' => 'nullable|array',
             'is_active' => 'boolean',
         ]);
 
