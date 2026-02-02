@@ -32,6 +32,7 @@ class UserTripController extends Controller
                     'trip_date' => $trip->trip_date,
                     'trip_time' => $trip->trip_time,
                     'duration_minutes' => $trip->duration_minutes,
+                    'cancellation_policy' => $trip->cancellation_policy,
                     'is_active' => $trip->is_active,
                     'bookings' => $trip->serviceRequests->map(fn($req) => [
                         'id' => $req->id,

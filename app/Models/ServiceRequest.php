@@ -31,6 +31,8 @@ class ServiceRequest extends Model
         'start_time',
         'total_price',
         'status',
+        'cancellation_reason',
+        'cancelled_at',
         'notes',
         'request_reference',
     ];
@@ -38,6 +40,7 @@ class ServiceRequest extends Model
     protected $casts = [
         'trip_date' => 'date',
         'start_date' => 'date',
+        'cancelled_at' => 'datetime',
         'total_price' => 'decimal:2',
         'passengers_count' => 'integer',
         'duration_hours' => 'integer',

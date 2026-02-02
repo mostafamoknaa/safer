@@ -128,6 +128,7 @@ class ServiceController extends Controller
                     'total_seats' => $trip->bus->total_seats,
                     'reserved_seats' => $reservedSeats,
                     'available_seats' => $trip->bus->total_seats - count($reservedSeats),
+                    'cancellation_policy' => $trip->cancellation_policy,
                 ];
             });
 
@@ -162,6 +163,7 @@ class ServiceController extends Controller
                 'duration_minutes' => $trip->duration_minutes,
                 'available_seats' => $trip->available_seats_count,
                 'booked_seats' => $bookedSeats,
+                'cancellation_policy' => $trip->cancellation_policy,
             ],
         ]);
     }
@@ -189,6 +191,7 @@ class ServiceController extends Controller
                     'fuel_type' => $car->fuel_type ?? 'gasoline',
                     'transmission' => $car->transmission ?? 'automatic',
                     'notes' => app()->getLocale() === 'ar' ? $car->notes_ar : $car->notes_en,
+                    'cancellation_policy' => $car->cancellation_policy,
                 ];
             });
 
@@ -425,6 +428,8 @@ class ServiceController extends Controller
                     'service_type' => $req->service_type,
                     'total_price' => (float) $req->total_price,
                     'status' => $req->status,
+                    'cancellation_reason' => $req->cancellation_reason,
+                    'cancelled_at' => $req->cancelled_at ? $req->cancelled_at->format('Y-m-d H:i:s') : null,
                     'user' => $req->user,
                     'created_at' => $req->created_at->format('Y-m-d H:i:s'),
                 ];

@@ -27,6 +27,8 @@ class Booking extends Model
         'price_per_night',
         'nights_count',
         'status',
+        'cancellation_reason',
+        'cancelled_at',
         'notes',
         'admin_notes',
         'booking_reference',
@@ -37,6 +39,7 @@ class Booking extends Model
     protected $casts = [
         'check_in_date' => 'date',
         'check_out_date' => 'date',
+        'cancelled_at' => 'datetime',
         'total_price' => 'decimal:2',
         'price_per_night' => 'decimal:2',
         'guests_count' => 'integer',

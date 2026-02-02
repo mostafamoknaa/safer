@@ -73,6 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bookings', [\App\Http\Controllers\Api\BookingController::class, 'createBooking']);
     Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancelBooking']);
 
+    // Cancellation routes
+    Route::get('/cancellation/reasons', [\App\Http\Controllers\Api\CancellationController::class, 'getCancellationReasons']);
+    Route::post('/cancellation/hotel/{booking}', [\App\Http\Controllers\Api\CancellationController::class, 'cancelHotelBooking']);
+    Route::post('/cancellation/service/{serviceRequest}', [\App\Http\Controllers\Api\CancellationController::class, 'cancelServiceRequest']);
+    Route::post('/cancellation/event/{eventTicket}', [\App\Http\Controllers\Api\CancellationController::class, 'cancelEventTicket']);
+
     // Payments routes`
     Route::get('/payments/verify', [\App\Http\Controllers\Api\PaymentController::class, 'verifyPayment'])->name('api.payments.verify');
     Route::get('/payments/callback/success', [\App\Http\Controllers\Api\PaymentController::class, 'paymentSuccess'])->name('api.payments.callback.success');

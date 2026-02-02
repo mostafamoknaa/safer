@@ -18,6 +18,8 @@ class EventTicket extends Model
         'tickets_count',
         'total_price',
         'status',
+        'cancellation_reason',
+        'cancelled_at',
         'notes',
         'ticket_reference',
     ];
@@ -25,6 +27,7 @@ class EventTicket extends Model
     protected $casts = [
         'tickets_count' => 'integer',
         'total_price' => 'decimal:2',
+        'cancelled_at' => 'datetime',
     ];
 
     /**

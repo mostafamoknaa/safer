@@ -179,6 +179,7 @@ class HotelController extends Controller
                     'name_en' => $hotel->name_en,
                     'address_ar' => $hotel->address_ar,
                     'address_en' => $hotel->address_en,
+                    'cancellation_policy' => $hotel->cancellation_policy,
                     'about_info' => app()->getLocale() === 'ar'
                         ? $hotel->about_info_ar
                         : $hotel->about_info_en,
@@ -338,6 +339,7 @@ class HotelController extends Controller
                 'is_available' => $isAvailable,
                 'rating' => 4.5, // Placeholder - implement room-specific ratings if needed
                 'images' => $images,
+                'cancellation_policy' => $room->cancellation_policy,
             ];
         });
 
@@ -402,6 +404,7 @@ class HotelController extends Controller
                 'name_en' => $hotel->name_en,
                 'address_ar' => $hotel->address_ar,
                 'address_en' => $hotel->address_en,
+                'cancellation_policy' => $hotel->cancellation_policy,
                 'lat' => $hotel->lat ? (float) $hotel->lat : null,
                 'lang' => $hotel->lang ? (float) $hotel->lang : null,
                 'type' => $hotel->type,
@@ -787,6 +790,7 @@ class HotelController extends Controller
                 'name_en' => $hotel->name_en,
                 'address_ar' => $hotel->address_ar,
                 'address_en' => $hotel->address_en,
+                'cancellation_policy' => $hotel->cancellation_policy,
                 'lat' => $hotel->lat ? (float) $hotel->lat : null,
                 'lang' => $hotel->lang ? (float) $hotel->lang : null,
                 'type' => $hotel->type,
@@ -885,6 +889,7 @@ class HotelController extends Controller
                     'is_favorite' => in_array($hotel->id, $favoriteIds),
                     'name' => app()->getLocale() === 'ar' ? $hotel->name_ar : $hotel->name_en,
                     'address' => app()->getLocale() === 'ar' ? $hotel->address_ar : $hotel->address_en,
+                    'cancellation_policy' => $hotel->cancellation_policy,
                     'about_info' => app()->getLocale() === 'ar'
                         ? $hotel->about_info_ar
                         : $hotel->about_info_en,

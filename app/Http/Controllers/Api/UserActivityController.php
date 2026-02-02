@@ -174,6 +174,7 @@ class UserActivityController extends Controller
                     'cancellation_hours' => $activity->cancellation_hours,
                     'is_active' => $activity->is_active,
                     'activity_images' => collect($activity->activity_images)->map(fn($img) => asset('storage/' . $img)),
+                     'cancellation_policy' => $activity->cancellation_policy,
                 ];
             });
 

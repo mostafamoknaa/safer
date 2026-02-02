@@ -109,6 +109,8 @@ class BookingController extends Controller
                     'price_per_night' => $booking->price_per_night ? (float) $booking->price_per_night : null,
                     'total_price' => (float) $booking->total_price,
                     'status' => $booking->status,
+                    'cancellation_reason' => $booking->cancellation_reason,
+                    'cancelled_at' => $booking->cancelled_at ? $booking->cancelled_at->format('Y-m-d H:i:s') : null,
                     'total_paid' => (float) $booking->total_paid,
                     'remaining_amount' => (float) $booking->remaining_amount,
                     'created_at' => $booking->created_at->format('Y-m-d H:i:s'),
@@ -144,6 +146,8 @@ class BookingController extends Controller
                         'total_price' => (float) $ticket->total_price,
                         'status' => $ticket->status,
                         'notes' => $ticket->notes,
+                        'cancellation_reason' => $ticket->cancellation_reason,
+                        'cancelled_at' => $ticket->cancelled_at ? $ticket->cancelled_at->format('Y-m-d H:i:s') : null,
                         'event' => $ticket->event ? [
                             'id' => $ticket->event->id,
                             'name_ar' => $ticket->event->name_ar,
@@ -271,6 +275,8 @@ class BookingController extends Controller
                 'total_price' => (float) $booking->total_price,
                 'status' => $booking->status,
                 'notes' => $booking->notes,
+                'cancellation_reason' => $booking->cancellation_reason,
+                'cancelled_at' => $booking->cancelled_at ? $booking->cancelled_at->format('Y-m-d H:i:s') : null,
                 'total_paid' => (float) $booking->total_paid,
                 'remaining_amount' => (float) $booking->remaining_amount,
                 'payments' => $payments,
@@ -487,7 +493,7 @@ class BookingController extends Controller
     /**
      * Cancel a booking.
      */
-    public function cancelBooking(Booking $booking): JsonResponse
+    public function cancelBooking(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->user_id !== Auth::id()) {
             return response()->json([
@@ -503,11 +509,25 @@ class BookingController extends Controller
             ], 400);
         }
 
-        $booking->update(['status' => 'cancelled']);
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $booking->update([
+            'status' => 'cancelled',
+            'cancellation_reason' => $validated['reason'],
+            'cancelled_at' => now(),
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => __('api.bookings.cancelled'),
+            'data' => [
+                'booking_id' => $booking->id,
+                'booking_reference' => $booking->booking_reference,
+                'cancelled_at' => $booking->cancelled_at->format('Y-m-d H:i:s'),
+                'cancellation_reason' => $booking->cancellation_reason,
+            ],
         ]);
     }
 }

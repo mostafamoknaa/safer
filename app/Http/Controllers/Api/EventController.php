@@ -48,6 +48,7 @@ class EventController extends Controller
                     'category' => $event->category ?? 'general',
                     'available_tickets' => $event->available_tickets,
                     'remaining_tickets' => $event->remaining_tickets,
+                    'cancellation_policy' => $event->cancellation_policy,
                 ];
             });
 
@@ -101,6 +102,7 @@ class EventController extends Controller
                     'price_from' => (float) $event->price,
                     'image' => $event->image_url ?? null,
                     'category' => $event->category ?? 'general',
+                     'cancellation_policy' => $event->cancellation_policy,
                 ];
             });
 
@@ -135,6 +137,7 @@ class EventController extends Controller
                 'sold_tickets' => $event->sold_tickets_count,
                 'organizer' => $event->organizer ?? null,
                 'contact_info' => $event->contact_info ?? null,
+                 'cancellation_policy' => $event->cancellation_policy,
             ],
         ]);
     }

@@ -36,6 +36,7 @@ class UserCarController extends Controller
                     'notes_en' => $car->notes_en,
                     'is_active' => $car->is_active,
                     'images' => $car->media->map(fn($media) => asset('storage/' . $media->file_path)),
+                    'cancellation_policy' => $car->cancellation_policy,
                 ];
             });
 
