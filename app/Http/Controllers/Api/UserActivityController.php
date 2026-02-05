@@ -16,14 +16,24 @@ class UserActivityController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'name_ar' => 'required|string|max:2000',
+            'name_en' => 'required|string|max:2000',
             'type' => 'required|in:activity',
+            'location_url' => 'nullable',
+            'lat'  => 'nullable|numeric',
+            'lng'  => 'nullable|numeric',
             'activity_type' => 'required|in:رياضة,سفر,تسوق,عمل,تعليم,ترفيه,صحة,اجتماعات',
             'price_per_person' => 'required|numeric|min:0',
+            'event_date' => 'required|date',
+            'available_tickets' => 'required|integer|min:1',
             'duration' => 'required|string|max:255',
-            'location' => 'required|string|max:500',
-            'description' => 'required|string|max:2000',
+            'location_ar' => 'required|string|max:500',
+            'location_en' => 'required|string|max:500',
+            'description_ar' => 'required|string|max:2000',
+            'description_en' => 'required|string|max:2000',
             'phone' => 'required|string|max:20',
             'phone_secondary' => 'nullable|string|max:20',
+            'cancellation_policy' => 'nullable|array',
             'activity_images' => 'required|array|max:5',
             'activity_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'id_images' => 'required|array|size:2',
@@ -48,24 +58,39 @@ class UserActivityController extends Controller
         }
 
         $activity = Event::create([
-            'name_ar' => $validated['description'],
-            'name_en' => $validated['description'],
-            'event_date' => now(),
-            'location_ar' => $validated['location'],
-            'location_en' => $validated['location'],
-            'description_ar' => $validated['description'],
-            'description_en' => $validated['description'],
+            'name_ar' => $validated['name_ar'],
+            'name_en' => $validated['name_en'],
+            'type' => $validated['type'],
+    
+            'event_date' => $validated['event_date'],
+    
+            'location_ar' => $validated['location_ar'],
+            'location_en' => $validated['location_en'],
+            'location_url' => $validated['location_url'] ?? null,
+            'lat' => $validated['lat'] ?? null,
+            'lng' => $validated['lng'] ?? null,
+    
+            'description_ar' => $validated['description_ar'],
+            'description_en' => $validated['description_en'],
+    
             'activity_type' => $validated['activity_type'],
             'price_per_person' => $validated['price_per_person'],
-            'price' =>  $validated['price_per_person'],
+            'price' => $validated['price_per_person'],
+    
+            'available_tickets' => $validated['available_tickets'],
             'duration' => $validated['duration'],
+    
             'phone' => $validated['phone'],
-            'phone_secondary' => $validated['phone_secondary'],
+            'phone_secondary' => $validated['phone_secondary'] ?? null,
+    
             'activity_images' => $activityImages,
             'id_images' => $idImages,
+            'cancellation_policy' => $validated['cancellation_policy'] ?? null,
+    
             'user_id' => Auth::id(),
-            'is_active' => false, // Pending approval
+            'is_active' => false,
         ]);
+    
 
         return response()->json([
             'success' => true,
@@ -87,40 +112,56 @@ class UserActivityController extends Controller
         }
 
         $validated = $request->validate([
-            'type' => 'required|in:activity',
-            'activity_type' => 'required|in:رياضة,سفر,تسوق,عمل,تعليم,ترفيه,صحة,اجتماعات',
-            'price_per_person' => 'required|numeric|min:0',
-            'duration' => 'required|string|max:255',
-            'max_participants' => 'required|integer|min:1',
-            'location' => 'required|string|max:500',
-            'description' => 'required|string|max:2000',
-            'phone' => 'required|string|max:20',
+            'name_ar' => 'nullable|string|max:2000',
+            'name_en' => 'nullable|string|max:2000',
+    
+            'type' => 'nullable|in:activity',
+            'activity_type' => 'nullable|in:رياضة,سفر,تسوق,عمل,تعليم,ترفيه,صحة,اجتماعات',
+    
+            'price_per_person' => 'nullable|numeric|min:0',
+            'duration' => 'nullable|string|max:255',
+    
+            'available_tickets' => 'nullable|integer|min:1',
+    
+            'location_ar' => 'nullable|string|max:500',
+            'location_en' => 'nullable|string|max:500',
+    
+            'description_ar' => 'nullable|string|max:2000',
+            'description_en' => 'nullable|string|max:2000',
+    
+            'phone' => 'nullable|string|max:20',
             'phone_secondary' => 'nullable|string|max:20',
-            'instant_booking' => 'required|boolean',
-            'allow_cancellation' => 'required|boolean',
-            'cancellation_hours' => 'nullable|integer|min:1',
+
+            'event_date' => 'nullable|date',
+    
+    
             'activity_images' => 'nullable|array|max:5',
             'activity_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
-            'id_images' => 'nullable|array|size:2',
-            'id_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
-
+    
         $updateData = [
-            'name_ar' => $validated['description'],
-            'name_en' => $validated['description'],
-            'location_ar' => $validated['location'],
-            'location_en' => $validated['location'],
-            'description_ar' => $validated['description'],
-            'description_en' => $validated['description'],
+            'name_ar' => $validated['name_ar'],
+            'name_en' => $validated['name_en'],
+            'type' => $validated['type'],
+    
+            'location_ar' => $validated['location_ar'],
+            'location_en' => $validated['location_en'],
+    
+            'description_ar' => $validated['description_ar'],
+            'description_en' => $validated['descriptio_en'],
+    
             'activity_type' => $validated['activity_type'],
             'price_per_person' => $validated['price_per_person'],
+            'price' => $validated['price_per_person'],
+    
+            'available_tickets' => $validated['available_tickets'],
             'duration' => $validated['duration'],
-            'max_participants' => $validated['max_participants'],
+    
             'phone' => $validated['phone'],
-            'phone_secondary' => $validated['phone_secondary'],
-            'instant_booking' => $validated['instant_booking'],
-            'allow_cancellation' => $validated['allow_cancellation'],
-            'cancellation_hours' => $validated['cancellation_hours'],
+            'phone_secondary' => $validated['phone_secondary'] ?? null,
+
+            'event_date' => $validated['event_date'],
+
         ];
 
         // Upload new activity images if provided
@@ -132,15 +173,6 @@ class UserActivityController extends Controller
             $updateData['activity_images'] = $activityImages;
         }
 
-        // Upload new ID images if provided
-        if ($request->hasFile('id_images')) {
-            $idImages = [];
-            foreach ($request->file('id_images') as $index => $image) {
-                $type = $index === 0 ? 'front' : 'back';
-                $idImages[$type] = $image->store('activities/documents', 'public');
-            }
-            $updateData['id_images'] = $idImages;
-        }
 
         $activity->update($updateData);
 
@@ -174,7 +206,7 @@ class UserActivityController extends Controller
                     'cancellation_hours' => $activity->cancellation_hours,
                     'is_active' => $activity->is_active,
                     'activity_images' => collect($activity->activity_images)->map(fn($img) => asset('storage/' . $img)),
-                     'cancellation_policy' => $activity->cancellation_policy,
+                    'cancellation_policy' => $activity->cancellation_policy,
                 ];
             });
 
@@ -183,4 +215,6 @@ class UserActivityController extends Controller
             'data' => $activities,
         ]);
     }
+
+
 }

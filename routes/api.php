@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/my-tickets', [\App\Http\Controllers\Api\EventController::class, 'getUserTickets']);
     Route::get('/events/{event}', [\App\Http\Controllers\Api\EventController::class, 'getEventDetails']);
     Route::post('/events/purchase', [\App\Http\Controllers\Api\EventController::class, 'purchaseTickets']);
+    Route::delete('/events/{event}' , [\App\Http\Controllers\Api\EventController::class, 'deleteEvent']);
 
     // Hotels routes
     Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
@@ -96,6 +97,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Support routes
     Route::get('/support/contact', [\App\Http\Controllers\Api\SupportController::class, 'getContactInfo']);
+    Route::get('/policies', [\App\Http\Controllers\Api\SupportController::class, 'getPolicies']);
+    Route::get('/terms-and-conditions', [\App\Http\Controllers\Api\SupportController::class, 'getTerms']);
     Route::post('/support/contact', [\App\Http\Controllers\Api\SupportController::class, 'sendMessage']);
     Route::get('/support/faq', [\App\Http\Controllers\Api\SupportController::class, 'getFAQ']);
     Route::post('/support/insert-contacts', [\App\Http\Controllers\Api\SupportController::class, 'insertContactLinks']);

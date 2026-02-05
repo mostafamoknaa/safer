@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ContactLink;
 use App\Models\Faq;
+use App\Models\Policy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -122,45 +123,23 @@ class SupportController extends Controller
         ]);
     }
 
-    /**
-     * Insert sample FAQs.
-     */
-    public function insertFAQs(): JsonResponse
-    {
-        $faqs = [
-            [
-                'question_ar' => 'كيف يمكنني حجز فندق؟',
-                'question_en' => 'How can I book a hotel?',
-                'answer_ar' => 'يمكنك حجز فندق من خلال تصفح الفنادق المتاحة واختيار الغرفة المناسبة ثم إتمام عملية الدفع.',
-                'answer_en' => 'You can book a hotel by browsing available hotels, selecting a suitable room, and completing the payment process.',
-                'is_active' => true,
-                'order_column' => 1,
-            ],
-            [
-                'question_ar' => 'ما هي طرق الدفع المتاحة؟',
-                'question_en' => 'What payment methods are available?',
-                'answer_ar' => 'نقبل جميع بطاقات الائتمان الرئيسية وطرق الدفع الإلكترونية المحلية.',
-                'answer_en' => 'We accept all major credit cards and local electronic payment methods.',
-                'is_active' => true,
-                'order_column' => 2,
-            ],
-            [
-                'question_ar' => 'هل يمكنني إلغاء الحجز؟',
-                'question_en' => 'Can I cancel my booking?',
-                'answer_ar' => 'نعم، يمكنك إلغاء الحجز حسب سياسة الإلغاء الخاصة بكل فندق.',
-                'answer_en' => 'Yes, you can cancel your booking according to each hotel\'s cancellation policy.',
-                'is_active' => true,
-                'order_column' => 3,
-            ],
-        ];
 
-        foreach ($faqs as $faq) {
-            Faq::create($faq);
-        }
+    // get polices 
+    public function getPolicies(){
+        $polices = Policy::where('slug', 'privacy-policy')->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'FAQs inserted successfully',
+            'data' => $polices,
+        ]);
+    }
+
+    public function getTerms(){
+        $terms = Policy::where('slug', 'term_condition')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $terms,
         ]);
     }
 }

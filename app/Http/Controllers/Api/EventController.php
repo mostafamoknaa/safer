@@ -35,20 +35,29 @@ class EventController extends Controller
             ->map(function ($event) {
                 return [
                     'id' => $event->id,
-                    'name' => app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en,
-                    'location' => app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en,
+                    'name_ar' =>$event->name_ar,
+                    'name_en' => $event->name_en,
+                    'location_ar' => $event->location_ar,
+                    'location_en' =>$event->location_en,
                     'location_url' => $event->location_url,
                     'lat' => $event->lat ? (float) $event->lat : null,
                     'lng' => $event->lng ? (float) $event->lng : null,
                     'event_date' => $event->event_date->format('Y-m-d'),
                     'event_time' => $event->event_date->format('H:i'),
-                    'description' => app()->getLocale() === 'ar' ? $event->description_ar : $event->description_en,
+                    'description_ar' => $event->description_ar,
+                    'description_en' =>$event->description_en,
                     'price_from' => (float) $event->price,
                     'image' => $event->image_url ?? null,
                     'category' => $event->category ?? 'general',
+                    'phone' => $event->phone,
+                    'phone_secondary' => $event->phone_secondary,
+                    'activity_type' => $event->activity_type,
+                    'price_per_person' => (float) $event->price_per_person,
+                    'duration' => $event->duration,
                     'available_tickets' => $event->available_tickets,
                     'remaining_tickets' => $event->remaining_tickets,
                     'cancellation_policy' => $event->cancellation_policy,
+                    'activity_images' => $event->activity_images,
                 ];
             });
 
@@ -92,17 +101,29 @@ class EventController extends Controller
             ->map(function ($event) {
                 return [
                     'id' => $event->id,
-                    'name' => app()->getLocale() === 'ar' ? $event->name_ar : $event->name_en,
-                    'location' => app()->getLocale() === 'ar' ? $event->location_ar : $event->location_en,
+                    'name_ar' =>$event->name_ar,
+                    'name_en' => $event->name_en,
+                    'location_ar' => $event->location_ar,
+                    'location_en' =>$event->location_en,
+                    'location_url' => $event->location_url,
                     'lat' => $event->lat ? (float) $event->lat : null,
                     'lng' => $event->lng ? (float) $event->lng : null,
-                    'distance' => round($event->distance, 2) . ' km',
                     'event_date' => $event->event_date->format('Y-m-d'),
                     'event_time' => $event->event_date->format('H:i'),
+                    'description_ar' => $event->description_ar,
+                    'description_en' =>$event->description_en,
                     'price_from' => (float) $event->price,
                     'image' => $event->image_url ?? null,
                     'category' => $event->category ?? 'general',
-                     'cancellation_policy' => $event->cancellation_policy,
+                    'phone' => $event->phone,
+                    'phone_secondary' => $event->phone_secondary,
+                    'activity_type' => $event->activity_type,
+                    'price_per_person' => (float) $event->price_per_person,
+                    'duration' => $event->duration,
+                    'available_tickets' => $event->available_tickets,
+                    'remaining_tickets' => $event->remaining_tickets,
+                    'cancellation_policy' => $event->cancellation_policy,
+                    'activity_images' => $event->activity_images,
                 ];
             });
 
@@ -248,6 +269,24 @@ class EventController extends Controller
         return response()->json([
             'success' => true,
             'data' => $tickets,
+        ]);
+    }
+
+    //detele the event 
+    public function deleteEvent(Event $event): JsonResponse
+    {
+        if ($event->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مصرح لك بحذف هذا النشاط',
+            ], 403);
+        }
+
+        $event->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف النشاط بنجاح',
         ]);
     }
 }
