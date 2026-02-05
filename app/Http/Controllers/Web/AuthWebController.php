@@ -92,6 +92,11 @@ class AuthWebController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        if ($user) {
+            $user->tokens()->delete();
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();

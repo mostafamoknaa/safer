@@ -41,6 +41,18 @@
     <main class="py-12 px-4 md:px-8 max-w-5xl mx-auto min-h-screen">
         <h1 class="text-4xl font-bold text-gray-900 mb-8 text-right">حجوزاتي والطلبات</h1>
 
+        @if(session('success'))
+            <div class="mb-8 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-right">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-8 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-right">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Tabs Container -->
         <div class="flex flex-row-reverse mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-fit ml-auto">
             <button onclick="switchTab('hotels')" id="btn-hotels" class="tab-btn active px-8 py-3 rounded-xl font-bold transition-all text-sm">
@@ -75,6 +87,18 @@
                                 <div>
                                     <div class="flex flex-wrap items-center justify-end gap-3 mb-4">
                                         <span class="bg-blue-100 text-blue-600 px-4 py-1.5 rounded-xl font-bold text-sm">الإقامات</span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset {{ 
+                                            $booking->status === 'pending' ? 'bg-yellow-50 text-yellow-700 ring-yellow-600/20' : 
+                                            ($booking->status === 'approved' ? 'bg-green-50 text-green-700 ring-green-600/20' : 
+                                            'bg-red-50 text-red-700 ring-red-600/20') 
+                                        }}">
+                                            @switch($booking->status)
+                                                @case('pending') قيد المراجعة @break
+                                                @case('approved') تم التأكيد @break
+                                                @case('cancelled') ملغى @break
+                                                @default {{ $booking->status }}
+                                            @endswitch
+                                        </span>
                                         <div class="flex gap-1 text-yellow-400">
                                             @for($i = 0; $i < 5; $i++)
                                                 <i class="fa-solid fa-star text-xs {{ $i < round($hotel->rate ?? 5) ? '' : 'opacity-20' }}"></i>
@@ -93,12 +117,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-6 md:mt-0 flex items-center justify-between md:justify-end md:gap-8">
-                                    <div class="text-right">
-                                        <p class="text-blue-600 font-bold text-2xl">{{ number_format($booking->total_price) }} ج.م</p>
+                                    <div class="mt-6 md:mt-0 flex items-center justify-between md:justify-end md:gap-3">
+                                        <div class="text-right ml-5">
+                                            <p class="text-blue-600 font-bold text-2xl">{{ number_format($booking->total_price) }} ج.م</p>
+                                        </div>
+                                        <a href="{{ route('web.bookings.show', $booking) }}" class="px-6 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition">التفاصيل</a>
+                                        @if($booking->status === 'pending')
+                                            <button onclick="confirmCancel('{{ route('web.bookings.cancel', $booking) }}')" class="px-6 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">إلغاء</button>
+                                        @endif
                                     </div>
-                                    <a href="{{ route('web.bookings.show', $booking) }}" class="px-6 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition">التفاصيل</a>
-                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -189,7 +216,7 @@
                                 <div class="flex items-center justify-end gap-3 mt-4 lg:mt-0">
                                     <a href="{{ route('web.bookings.service_show', $request->id) }}" class="px-5 py-2.5 rounded-xl border border-gray-100 text-gray-600 text-sm font-bold hover:bg-gray-50 transition">التفاصيل</a>
                                     @if($request->status === 'pending')
-                                        <button class="px-5 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition">إلغاء</button>
+                                        <button onclick="confirmCancel('{{ route('web.bookings.service_cancel', $request) }}')" class="px-5 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition">إلغاء</button>
                                     @endif
                                 </div>
                             </div>
@@ -257,11 +284,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-6 md:mt-0 flex items-center justify-between md:justify-end md:gap-8">
-                                    <div class="text-right">
+                                <div class="mt-6 md:mt-0 flex items-center justify-between md:justify-end md:gap-3">
+                                    <div class="text-right ml-5">
                                         <p class="text-blue-600 font-bold text-2xl">{{ number_format($ticket->total_price) }} ج.م</p>
                                     </div>
                                     <a href="{{ route('web.bookings.event_ticket_show', $ticket->id) }}" class="px-6 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition">التفاصيل</a>
+                                    @if($ticket->status === 'pending')
+                                        <button onclick="confirmCancel('{{ route('web.bookings.event_ticket_cancel', $ticket) }}')" class="px-6 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">إلغاء</button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -271,9 +301,33 @@
         </div>
     </main>
 
+    <form id="cancel-form" method="POST" class="hidden">
+        @csrf
+    </form>
+
     @include('partials.footer')
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        function confirmCancel(url) {
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: "لن تتمكن من التراجع عن هذا الإجراء!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'نعم، قم بالإلغاء',
+                cancelButtonText: 'تراجع'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('cancel-form');
+                    form.action = url;
+                    form.submit();
+                }
+            })
+        }
+
         function switchTab(tab) {
             // Hide all contents
             document.querySelectorAll('.tab-content').forEach(content => {

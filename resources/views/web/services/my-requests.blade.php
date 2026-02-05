@@ -31,6 +31,18 @@
                 </div>
             </div>
 
+            @if(session('success'))
+                <div class="mb-8 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-right">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-8 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-right">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             @if($requests->isEmpty())
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-4">
@@ -115,7 +127,7 @@
                                         التفاصيل
                                     </button>
                                     @if($request->status === 'pending')
-                                        <button class="px-5 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition">
+                                        <button onclick="confirmCancel('{{ route('web.bookings.service_cancel', $request) }}')" class="px-5 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition">
                                             إلغاء
                                         </button>
                                     @endif
@@ -134,8 +146,29 @@
 
     @include('partials.footer')
 
+    <form id="cancel-form" method="POST" class="hidden">
+        @csrf
+    </form>
+
     <script>
-        // Any custom scripts for this page
+        function confirmCancel(url) {
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: "لن تتمكن من التراجع عن هذا الإجراء!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'نعم، قم بالإلغاء',
+                cancelButtonText: 'تراجع'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('cancel-form');
+                    form.action = url;
+                    form.submit();
+                }
+            })
+        }
     </script>
 </body>
 

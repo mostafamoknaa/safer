@@ -16,7 +16,7 @@ class BookingController extends Controller
     public function index()
     {
         $bookings = auth()->user()->bookings()
-            ->with(['room.hotel', 'payments'])
+            ->with(['room.hotel.media', 'room.hotel.province', 'payments'])
             ->orderBy('created_at', 'desc')
             ->paginate(10, ['*'], 'bookings_page');
 
@@ -182,17 +182,51 @@ class BookingController extends Controller
             abort(403);
         }
 
-        if ($booking->status === 'cancelled') {
-            return back()->withErrors(['error' => 'الحجز ملغى بالفعل']);
-        }
-
-        if ($booking->status === 'completed') {
-            return back()->withErrors(['error' => 'لا يمكن إلغاء حجز مكتمل']);
+        if ($booking->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء الحجز إلا إذا كان قيد المراجعة']);
         }
 
         $booking->update(['status' => 'cancelled']);
 
         return back()->with('success', 'تم إلغاء الحجز بنجاح');
+    }
+
+    /**
+     * Cancel the specified service request.
+     */
+    public function cancelServiceRequest(\App\Models\ServiceRequest $request)
+    {
+        // Ensure user can only cancel their own requests
+        if ($request->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($request->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء الطلب إلا إذا كان قيد المراجعة']);
+        }
+
+        $request->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'تم إلغاء طلب الخدمة بنجاح');
+    }
+
+    /**
+     * Cancel the specified event ticket.
+     */
+    public function cancelEventTicket(\App\Models\EventTicket $ticket)
+    {
+        // Ensure user can only cancel their own tickets
+        if ($ticket->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($ticket->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء التذكرة إلا إذا كانت قيد المراجعة']);
+        }
+
+        $ticket->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'تم إلغاء التذكرة بنجاح');
     }
 
     public function serviceShow($id)

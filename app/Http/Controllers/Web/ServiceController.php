@@ -96,7 +96,7 @@ class ServiceController extends Controller
             'notes' => $validated['notes'],
         ]);
 
-        return redirect()->route('web.services.my-requests')
+        return redirect()->route('web.bookings.index', ['tab' => 'services'])
             ->with('success', 'تم إرسال طلب الحجز بنجاح');
     }
 
@@ -147,7 +147,7 @@ class ServiceController extends Controller
             // request_reference is generated in boot()
         ]);
 
-        return redirect()->route('web.services.my-requests')
+        return redirect()->route('web.bookings.index', ['tab' => 'services'])
             ->with('success', 'تم إرسال طلب السيارة بنجاح');
     }
 

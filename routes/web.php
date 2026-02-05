@@ -112,10 +112,19 @@ Route::middleware(['auth'])->group(function () {
         \App\Http\Controllers\Web\BookingController::class,
         'serviceShow'
     ])->name('web.bookings.service_show');
+    Route::post('/my-service-requests/{request}/cancel', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'cancelServiceRequest'
+    ])->name('web.bookings.service_cancel');
+
     Route::get('/my-event-tickets/{id}', [
         \App\Http\Controllers\Web\BookingController::class,
         'eventTicketShow'
     ])->name('web.bookings.event_ticket_show');
+    Route::post('/my-event-tickets/{ticket}/cancel', [
+        \App\Http\Controllers\Web\BookingController::class,
+        'cancelEventTicket'
+    ])->name('web.bookings.event_ticket_cancel');
 
     // Favorites
     Route::get('/favorites', [\App\Http\Controllers\Web\FavoriteController::class, 'index'])->name('web.favorites.index');
@@ -201,7 +210,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('hotels', HotelController::class);
 
         Route::resource('hotel-rooms', HotelRoomController::class)
-            ->except('show');
+            ->except(['show', 'update']);
         Route::post('hotel-rooms/{hotelRoom}/update', [HotelRoomController::class, 'update'])
             ->name('hotel-rooms.update');
         Route::post('hotel-rooms/{hotelRoom}/clone', [HotelRoomController::class, 'clone'])
@@ -362,7 +371,7 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
             ->except('show', 'destroy');
 
         Route::resource('hotel-rooms', \App\Http\Controllers\Hotel\HotelRoomController::class)
-            ->except('show');
+            ->except(['show', 'update']);
         Route::post('hotel-rooms/{hotelRoom}/update', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'update'])
             ->name('hotel-rooms.update');
         Route::post('hotel-rooms/{hotelRoom}/clone', [\App\Http\Controllers\Hotel\HotelRoomController::class, 'clone'])
