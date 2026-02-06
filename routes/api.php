@@ -67,10 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events/purchase', [\App\Http\Controllers\Api\EventController::class, 'purchaseTickets']);
     Route::delete('/events/{event}' , [\App\Http\Controllers\Api\EventController::class, 'deleteEvent']);
 
-    // Hotels routes
-    Route::get('/hotels', [\App\Http\Controllers\Api\HotelController::class, 'getHotels']);
-    Route::get('/hotels/{hotel}', [\App\Http\Controllers\Api\HotelController::class, 'getHotelDetails']);
-    Route::get('/hotels/{hotel}/rooms', [\App\Http\Controllers\Api\HotelController::class, 'getHotelRooms']);
+    // Protected Hotels routes (that require auth like rating/review)
     Route::get('/rooms/{room}', [\App\Http\Controllers\Api\HotelController::class, 'getRoomDetails']);
     Route::post('/hotels/{hotel}/rate', [\App\Http\Controllers\Api\HotelController::class, 'addRating']);
     Route::post('/hotels/{hotel}/review', [\App\Http\Controllers\Api\HotelController::class, 'addReview']);

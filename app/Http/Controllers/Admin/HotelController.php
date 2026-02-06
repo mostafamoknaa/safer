@@ -59,7 +59,7 @@ class HotelController extends Controller
     public function show(Hotel $hotel): View
     {
         $hotel->load(['media', 'user', 'province']);
-        
+
         return view('admin.hotels.show', compact('hotel'));
     }
 

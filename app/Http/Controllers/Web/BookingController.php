@@ -16,11 +16,21 @@ class BookingController extends Controller
     public function index()
     {
         $bookings = auth()->user()->bookings()
-            ->with(['room.hotel', 'payments'])
+            ->with(['room.hotel.media', 'room.hotel.province', 'payments'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(10, ['*'], 'bookings_page');
 
-        return view('web.bookings.index', compact('bookings'));
+        $requests = auth()->user()->serviceRequests()
+            ->with(['trip.bus', 'privateCar'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'requests_page');
+
+        $eventTickets = auth()->user()->eventTickets()
+            ->with('event')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'events_page');
+
+        return view('web.bookings.index', compact('bookings', 'requests', 'eventTickets'));
     }
 
     /**
@@ -54,31 +64,48 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'hotel_id' => 'required|exists:hotels,id',
-            'room_id' => 'required|exists:hotel_rooms,id',
+            'rooms' => 'required|array',
+            'rooms.*' => 'integer|min:0',
             'check_in_date' => 'required|date|after_or_equal:today',
             'check_out_date' => 'required|date|after:check_in_date',
             'number_of_guests' => 'required|integer|min:1',
             'special_requests' => 'nullable|string',
         ]);
 
-        $room = HotelRoom::findOrFail($validated['room_id']);
-
-        // Check if room capacity is sufficient (using beds_count as capacity)
-        if ($validated['number_of_guests'] > $room->beds_count) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'عدد الضيوف يتجاوز سعة الغرفة'
-                ], 422);
-            }
-            return back()->withErrors(['number_of_guests' => 'عدد الضيوف يتجاوز سعة الغرفة']);
-        }
-
-        // Calculate total price
         $checkIn = \Carbon\Carbon::parse($validated['check_in_date']);
         $checkOut = \Carbon\Carbon::parse($validated['check_out_date']);
         $nights = $checkIn->diffInDays($checkOut);
-        $totalPrice = $room->price_per_night * $nights;
+
+        $totalPrice = 0;
+        $totalRoomsCount = 0;
+        $bookedRoomsData = [];
+
+        foreach ($validated['rooms'] as $roomId => $count) {
+            if ($count > 0) {
+                $room = HotelRoom::findOrFail($roomId);
+
+                // Optional: Check if room belongs to the hotel
+                if ($room->hotel_id != $validated['hotel_id']) {
+                    continue;
+                }
+
+                $roomTotal = ($room->price_per_night * $count * $nights) +
+                    ($room->cleaning_fee * $count) +
+                    ($room->service_fee * $count);
+
+                $totalPrice += $roomTotal;
+                $totalRoomsCount += $count;
+                $bookedRoomsData[] = [
+                    'room_id' => $roomId,
+                    'count' => $count,
+                    'price' => $room->price_per_night,
+                ];
+            }
+        }
+
+        if ($totalRoomsCount === 0) {
+            return back()->withErrors(['rooms' => 'يرجى اختيار غرفة واحدة على الأقل']);
+        }
 
         DB::beginTransaction();
         try {
@@ -86,17 +113,25 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => auth()->id(),
                 'hotel_id' => $validated['hotel_id'],
-                'room_id' => $validated['room_id'],
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
                 'guests_count' => $validated['number_of_guests'],
-                'rooms_count' => 1,
+                'rooms_count' => $totalRoomsCount,
+                'price_per_night' => !empty($bookedRoomsData) ? $bookedRoomsData[0]['price'] : 0,
                 'total_price' => $totalPrice,
-                'price_per_night' => $room->price_per_night,
                 'status' => 'pending',
                 'notes' => $validated['special_requests'] ?? null,
                 'nights_count' => $nights,
             ]);
+
+            // Save individual rooms
+            foreach ($bookedRoomsData as $roomData) {
+                \App\Models\BookingRoom::create([
+                    'booking_id' => $booking->id,
+                    'room_id' => $roomData['room_id'],
+                    'rooms_count' => $roomData['count'],
+                ]);
+            }
 
             DB::commit();
 
@@ -118,7 +153,7 @@ class BookingController extends Controller
                     'message' => 'حدث خطأ أثناء إنشاء الحجز: ' . $e->getMessage()
                 ], 500);
             }
-            return back()->withErrors(['error' => 'حدث خطأ أثناء إنشاء الحجز'])->withInput();
+            return back()->withErrors(['error' => 'حدث خطأ أثناء إنشاء الحجز: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -147,16 +182,72 @@ class BookingController extends Controller
             abort(403);
         }
 
-        if ($booking->status === 'cancelled') {
-            return back()->withErrors(['error' => 'الحجز ملغى بالفعل']);
-        }
-
-        if ($booking->status === 'completed') {
-            return back()->withErrors(['error' => 'لا يمكن إلغاء حجز مكتمل']);
+        if ($booking->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء الحجز إلا إذا كان قيد المراجعة']);
         }
 
         $booking->update(['status' => 'cancelled']);
 
         return back()->with('success', 'تم إلغاء الحجز بنجاح');
+    }
+
+    /**
+     * Cancel the specified service request.
+     */
+    public function cancelServiceRequest(\App\Models\ServiceRequest $request)
+    {
+        // Ensure user can only cancel their own requests
+        if ($request->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($request->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء الطلب إلا إذا كان قيد المراجعة']);
+        }
+
+        $request->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'تم إلغاء طلب الخدمة بنجاح');
+    }
+
+    /**
+     * Cancel the specified event ticket.
+     */
+    public function cancelEventTicket(\App\Models\EventTicket $ticket)
+    {
+        // Ensure user can only cancel their own tickets
+        if ($ticket->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($ticket->status !== 'pending') {
+            return back()->withErrors(['error' => 'لا يمكن إلغاء التذكرة إلا إذا كانت قيد المراجعة']);
+        }
+
+        $ticket->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'تم إلغاء التذكرة بنجاح');
+    }
+
+    public function serviceShow($id)
+    {
+        $request = \App\Models\ServiceRequest::with(['trip.bus', 'privateCar', 'bookedSeats'])->findOrFail($id);
+
+        if ($request->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return view('web.bookings.service_show', compact('request'));
+    }
+
+    public function eventTicketShow($id)
+    {
+        $ticket = \App\Models\EventTicket::with('event')->findOrFail($id);
+
+        if ($ticket->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return view('web.bookings.event_show', compact('ticket'));
     }
 }

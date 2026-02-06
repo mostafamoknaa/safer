@@ -36,19 +36,19 @@
 
         <!-- Contact Info -->
         <div>
-            <h3 class="font-bold text-xl mb-6">تواصل معنا</h3>
+            <h3 class="font-bold text-xl mb-6 text-start">تواصل معنا</h3>
             <ul class="space-y-4 text-gray-400">
-                <li class="flex items-center justify-end gap-3">
-                    <span>مصر</span>
+                <li class="flex items-center justify-start gap-3">
                     <i class="fa-solid fa-location-dot text-sm"></i>
+                    <span>مصر</span>
                 </li>
-                <li class="flex items-center justify-end gap-3">
-                    <span>support@alfosafr.com</span>
+                <li class="flex items-center justify-start gap-3">
                     <i class="fa-solid fa-envelope text-sm"></i>
+                    <span>support@alfosafr.com</span>
                 </li>
-                <li class="flex items-center justify-end gap-3">
-                    <span dir="ltr">+20 120 495 750</span>
+                <li class="flex items-center justify-start gap-3">
                     <i class="fa-solid fa-phone text-sm"></i>
+                    <span dir="ltr">+20 120 495 750</span>
                 </li>
             </ul>
         </div>

@@ -111,7 +111,7 @@ class HotelController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name_ar', 'like', "%{$search}%")
-                  ->orWhere('name_en', 'like', "%{$search}%");
+                    ->orWhere('name_en', 'like', "%{$search}%");
             });
         }
 
@@ -223,8 +223,8 @@ class HotelController extends Controller
             'success' => true,
             'message' => __('api.hotels.rating_added'),
             'data' => [
-                 'id' => $hotel->id,
-                 'rating' => (float) $hotel->rate
+                'id' => $hotel->id,
+                'rating' => (float) $hotel->rate
             ]
         ]);
     }
@@ -300,12 +300,12 @@ class HotelController extends Controller
                 ->where('favoritable_id', $hotel->id)
                 ->exists(); 
 
-             // Optimization: reuse the list logic which was:
-             // $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
+            // Optimization: reuse the list logic which was:
+            // $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
         }
         // Let's stick to the direct query for single item efficiency
         if ($user) {
-             $isFavorite = Favorite::where('user_id', $user->id)
+            $isFavorite = Favorite::where('user_id', $user->id)
                 ->where('favoritable_id', $hotel->id)
                 ->exists();
         }
@@ -315,7 +315,7 @@ class HotelController extends Controller
 
         $rooms = $hotel->rooms->map(function ($room) {
             $images = $room->media->where('type', 'image')->map(function ($media) {
-                 return $media->file_url;
+                return $media->file_url;
             })->values();
 
             // Check availability (simplified - you may want more complex logic)
@@ -419,11 +419,11 @@ class HotelController extends Controller
                 'website_url' => $hotel->website_url,
                 'about_info' => app()->getLocale() === 'ar' ? $hotel->about_info_ar : $hotel->about_info_en,
                 'price' => ($minPrice !== null && $maxPrice !== null)
-                        ? [
-                            'min' => (float) $minPrice,
-                            'max' => (float) $maxPrice,
-                        ]
-                        : null,
+                    ? [
+                        'min' => (float) $minPrice,
+                        'max' => (float) $maxPrice,
+                    ]
+                    : null,
                 'managers' => $managers,
                 'images' => $images,
                 'videos' => $videos,
@@ -475,7 +475,7 @@ class HotelController extends Controller
                                 ->where('check_out_date', '>=', $checkOut);
                         });
                 })
-                ->whereIn('status', ['pending', 'confirmed', 'checked_in']);
+                    ->whereIn('status', ['pending', 'confirmed', 'checked_in']);
             });
         }
 
@@ -557,8 +557,8 @@ class HotelController extends Controller
             ],
         ]);
     }
-  
-   /**
+
+    /**
      * Filter and search hotels with advanced options.
      */
       public function filterHotels(Request $request): JsonResponse
@@ -605,10 +605,10 @@ class HotelController extends Controller
               $query->where('country', 'like', "%{$request->country}%");
           }
 
-          // Filter by rating
-          if ($request->filled('min_rating')) {
-              $query->where('rate', '>=', $request->min_rating);
-          }
+        // Filter by rating
+        if ($request->filled('min_rating')) {
+            $query->where('rate', '>=', $request->min_rating);
+        }
 
           // Filter by type
           if ($request->filled('type')) {
@@ -831,11 +831,11 @@ class HotelController extends Controller
     {
         $request->validate([
             'lat' => 'required|numeric',
-            'lang' => 'required|numeric',
+            'lng' => 'required|numeric',
         ]);
 
         $lat = $request->lat;
-        $lang = $request->lang;
+        $lng = $request->lng;
 
         $user = auth('sanctum')->user();
         $favoriteIds = [];
@@ -844,13 +844,13 @@ class HotelController extends Controller
         }
 
         $hotels = Hotel::with([
-                'media',
-                'province',
-                'rooms' => function ($q) {
-                    $q->where('is_active', true);
-                },
-                'reviews.user'
-            ])
+            'media',
+            'province',
+            'rooms' => function ($q) {
+                $q->where('is_active', true);
+            },
+            'reviews.user'
+        ])
             ->select('hotels.*')
             ->selectRaw(
                 '( 6371 * acos( cos( radians(?) ) *
@@ -858,9 +858,9 @@ class HotelController extends Controller
                   cos( radians( lang ) - radians(?) ) +
                   sin( radians(?) ) *
                   sin( radians( lat ) ) ) ) AS distance',
-                [$lat, $lang, $lat]
+                [$lat, $lng, $lat]
             )
-            ->having('distance', '<=', 20)
+            ->having('distance', '<=', 50)
             ->when($request->filled('type'), function ($q) use ($request) {
                 return $q->where('type', $request->type);
             })
@@ -930,6 +930,32 @@ class HotelController extends Controller
         return response()->json([
             'success' => true,
             'data' => $countries,
+        ]);
+    }
+
+    /**
+     * Get price statistics for hotels.
+     */
+    public function getPriceStats(): JsonResponse
+    {
+        $minPrice = HotelRoom::where('is_active', true)->min('price_per_night') ?? 0;
+        $maxPrice = HotelRoom::where('is_active', true)->max('price_per_night') ?? 5000;
+
+        // Create some logical ranges
+        $ranges = [
+            ['label' => '0 - 500 ج.م', 'min' => 0, 'max' => 500],
+            ['label' => '500 - 1000 ج.م', 'min' => 500, 'max' => 1000],
+            ['label' => '1000 - 2000 ج.م', 'min' => 1000, 'max' => 2000],
+            ['label' => 'أكثر من 2000 ج.م', 'min' => 2000, 'max' => 1000000],
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'min' => (float) $minPrice,
+                'max' => (float) $maxPrice,
+                'predefined_ranges' => $ranges
+            ],
         ]);
     }
 }

@@ -30,88 +30,25 @@
 </head>
 
 <body class="bg-white">
-    <!-- Navbar (Simplified/Reuse) -->
-    <nav class="bg-white px-8 py-4 shadow-sm flex items-center justify-between sticky top-0 z-50">
-        <div class="flex items-center gap-2">
-            <a href="{{ route('web.home') }}" class="w-10 h-10 flex items-center justify-center rounded-lg">
-                <img src="{{ asset('9f0a5356f37b3a4ffa50fe9cf73267fbc8015c0d.png') }}" alt="Safer Logo"
-                    class="w-full h-full object-contain">
-            </a>
-        </div>
-        <div class="hidden lg:flex items-center gap-8 text-gray-600 font-semibold">
-            <a href="{{ route('web.home') }}" class="hover:text-blue-600 transition">الرئيسية</a>
-            <a href="{{ route('web.hotels.index') }}" class="hover:text-blue-600 transition">الإقامات</a>
-            <!-- Services Dropdown -->
-            <div class="relative group">
-                <button class="flex items-center gap-1 hover:text-blue-600 transition">
-                    <span>الخدمات</span>
-                    <i class="fa-solid fa-chevron-down text-xs"></i>
-                </button>
-                <div
-                    class="absolute top-full right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 text-right">
-                    <a href="{{ route('web.hotels.index') }}"
-                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-t-xl">
-                        حجز فنادق
-                    </a>
-                    <a href="{{ route('web.private_cars.index') }}"
-                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition rounded-b-xl">
-                        حجز سيارات خاصة
-                    </a>
-                </div>
-            </div>
-            <a href="{{ route('web.events.index') }}" class="hover:text-blue-600 transition">الأنشطة</a>
-            <a href="{{ route('web.contact') }}" class="hover:text-blue-600 transition">تواصل معنا</a>
-        </div>
-        <div class="flex items-center gap-4">
-            @auth
-                <div class="relative group">
-                    <button
-                        class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 hover:bg-gray-100 transition">
-                        <span class="text-gray-900 font-bold">{{ auth()->user()->name }}</span>
-                        <div
-                            class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white overflow-hidden shadow-lg border-2 border-white">
-                            @if(auth()->user()->image)
-                                <img src="{{ auth()->user()->image }}" alt="User" class="w-full h-full object-cover">
-                            @else
-                                <i class="fa-solid fa-user"></i>
-                            @endif
-                        </div>
-                    </button>
-                    <!-- Dropdown Menu -->
-                    <div
-                        class="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl py-3 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-[100] text-right">
-                        <a href="{{ route('web.profile.edit') }}" class="flex items-center justify-end gap-3 px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition">
-                            <span>الملف الشخصي</span>
-                            <i class="fa-solid fa-user-pen text-sm"></i>
-                        </a>
-                        <a href="{{ route('web.favorites.index') }}"
-                            class="flex items-center justify-end gap-3 px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition">
-                            <span>المفضلة</span>
-                            <i class="fa-solid fa-heart text-sm"></i>
-                        </a>
-                        <a href="{{ route('web.bookings.index') }}"
-                            class="flex items-center justify-end gap-3 px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition border-b border-gray-50">
-                            <span>حجوزاتي</span>
-                            <i class="fa-solid fa-calendar-check text-sm"></i>
-                        </a>
-                        <form action="{{ route('logout') }}" method="POST" class="m-0">
-                            @csrf
-                            <button type="submit"
-                                class="w-full flex items-center justify-end gap-3 px-6 py-3 text-red-500 hover:bg-red-50 transition">
-                                <span>تسجيل خروج</span>
-                                <i class="fa-solid fa-right-from-bracket text-sm"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @else
-                <a href="{{ route('login') }}"
-                    class="bg-blue-600 text-white px-8 py-2 rounded-full font-semibold hover:bg-blue-700 transition">
-                    تسجيل دخول
-                </a>
-            @endauth
-        </div>
-    </nav>
+    @include('partials.navbar')
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Automatic Geolocation Fetching if not present
+        window.onload = function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.has('lat') || !urlParams.has('lng')) {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        console.log('My Location:', { lat, lng });
+                        window.location.href = `{{ route('web.hotels.nearby') }}?lat=${lat}&lng=${lng}`;
+                    });
+                }
+            }
+        }
+    </script>
 
     <!-- Content -->
     <main class="py-12 px-8 max-w-7xl mx-auto">
@@ -119,94 +56,73 @@
             <h1 class="text-3xl font-bold text-gray-900 border-r-4 border-blue-600 pr-4">{{ $title }}</h1>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            @foreach($hotels as $hotel)
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative min-h-[400px]">
+            <!-- Loading Overlay -->
+            <div id="loading-overlay"
+                class="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-[40px] {{ request()->filled('lat') ? 'hidden' : '' }}">
                 <div
-                    class="hotel-card relative border border-gray-100 rounded-[32px] overflow-hidden bg-white block shadow-sm">
-                    <div class="relative">
-                        <a href="{{ route('web.hotels.show', $hotel->id) }}">
-                            <img src="{{ $hotel->media->first() ? $hotel->media->first()->file_url : 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=500' }}"
-                                alt="{{ $hotel->name_ar }}" class="w-full h-64 object-cover">
-                        </a>
-                        <button
-                            class="favorite-btn absolute top-4 right-4 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition shadow-sm z-10"
-                            data-hotel-id="{{ $hotel->id }}">
-                            <i
-                                class="fa-solid fa-heart {{ auth()->check() && auth()->user()->favorites()->where('favoritable_id', $hotel->id)->exists() ? 'text-red-500' : '' }}"></i>
-                        </button>
-                        <div
-                            class="absolute top-4 left-4 rating-badge flex items-center gap-1 text-xs font-bold text-white px-3 py-1.5 rounded-xl">
-                            <i class="fa-solid fa-star text-yellow-400"></i>
-                            {{ number_format($hotel->rate ?? 4.5, 1) }}
+                    class="animate-spin inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4">
+                </div>
+                <p class="text-gray-600 font-bold text-lg">جاري تحديد موقعك وعرض الفنادق القريبة...</p>
+            </div>
+
+            @forelse($hotels as $hotel)
+                <div
+                    class="hotel-card border border-gray-100 rounded-3xl overflow-hidden bg-white block relative shadow-sm">
+                    <a href="{{ route('web.hotels.show', $hotel->id) }}">
+                        <img src="{{ $hotel->media->first() ? $hotel->media->first()->file_url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600' }}"
+                            alt="{{ $hotel->name_ar }}" class="w-full h-56 object-cover">
+                    </a>
+                    <button
+                        class="favorite-btn absolute top-4 right-4 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition shadow-sm z-10"
+                        data-hotel-id="{{ $hotel->id }}">
+                        <i
+                            class="fa-solid fa-heart {{ auth()->check() && auth()->user()->favorites()->where('favoritable_id', $hotel->id)->exists() ? 'text-red-500' : '' }}"></i>
+                    </button>
+                    <div class="p-6 text-right">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg text-gray-900 leading-tight">
+                                {{ $hotel->name_ar }} / {{ $hotel->province ? $hotel->province->name_ar : 'مصر' }}
+                            </h3>
                         </div>
-                    </div>
-                    <div class="p-5 text-right">
-                        <h3 class="font-bold text-lg mb-2 text-gray-900">{{ $hotel->name_ar }} /
-                            {{ $hotel->province ? $hotel->province->name_ar : 'مصر' }}
-                        </h3>
-                        <p class="text-blue-600 font-bold mb-1">
-                            {{ $hotel->rooms->min('price_per_night') ? number_format($hotel->rooms->min('price_per_night')) : '1200' }}
-                            جنيه / ليلة
-                        </p>
-                        <div class="flex gap-1 text-yellow-400 justify-end">
-                            @for($i = 0; $i < 5; $i++)
-                                <i class="fa-solid fa-star {{ $i < round($hotel->rate ?? 5) ? '' : 'opacity-20' }}"></i>
-                            @endfor
+                        <div class="flex items-center justify-between mt-auto">
+                            <div class="flex gap-1 text-yellow-400">
+                                @php $rating = round($hotel->rate ?? $hotel->reviews_avg_rating ?? 5); @endphp
+                                @for($i = 0; $i < 5; $i++)
+                                    <svg class="w-4 h-4 {{ $i < $rating ? 'fill-current' : 'text-gray-200' }}"
+                                        viewBox="0 0 20 20">
+                                        <path
+                                            d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                    </svg>
+                                @endfor
+                            </div>
+                            <p class="text-[#FF6B6B] font-bold">
+                                {{ $hotel->rooms->min('price_per_night') ? number_format($hotel->rooms->min('price_per_night')) . ' ج.م / ليلة' : 'اتصل بالسعر' }}
+                            </p>
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                @if(request()->filled('lat'))
+                    <div
+                        class="col-span-full text-center py-20 bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200">
+                        <i class="fa-solid fa-map-location-dot text-4xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">عذراً، لا توجد فنادق قريبة منك حالياً</h3>
+                        <p class="text-gray-500">جرب البحث في نطاق أوسع أو في مدينة أخرى.</p>
+                    </div>
+                @endif
+            @endforelse
         </div>
 
         <!-- Pagination -->
-        <div class="mt-16 flex justify-center">
-            {{ $hotels->links() }}
-        </div>
+        @if(is_object($hotels) && method_exists($hotels, 'links'))
+            <div class="mt-16 flex justify-center">
+                {{ $hotels->links() }}
+            </div>
+        @endif
     </main>
 
-    <!-- Footer (Consistent) -->
-    <footer class="bg-[#0A1124] text-white pt-20 pb-10 px-8">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-right">
-            <div>
-                <div class="flex items-center justify-start gap-2 mb-6">
-                    <img src="{{ asset('9f0a5356f37b3a4ffa50fe9cf73267fbc8015c0d.png') }}" class="w-20 h-20 bg-white">
-                </div>
-                <p class="text-gray-400 text-sm leading-relaxed mb-8">موقع سياحي متكامل يساعدك على التخطيط لرحلتك
-                    بسهولة...</p>
-                <div class="flex justify-end gap-3">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
-                        class="w-32">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                        class="w-32">
-                </div>
-            </div>
-            <div>
-                <h3 class="font-bold text-xl mb-6">روابط سريعة</h3>
-                <ul class="space-y-4 text-gray-400">
-                    <li>الرئيسية</li>
-                    <li>الإقامات</li>
-                    <li>الخدمات</li>
-                    <li>الانشطة</li>
-                    <li>اتصل بنا</li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="font-bold text-xl mb-6">تواصل معنا</h3>
-                <ul class="space-y-4 text-gray-400">
-                    <li class="flex items-center justify-end gap-3"><span>مصر</span><i
-                            class="fa-solid fa-location-dot"></i></li>
-                    <li class="flex items-center justify-end gap-3"><span>support@alfosafr.com</span><i
-                            class="fa-solid fa-envelope"></i></li>
-                    <li class="flex items-center justify-end gap-3"><span dir="ltr">+20 120 495 750</span><i
-                            class="fa-solid fa-phone"></i></li>
-                </ul>
-            </div>
-            <div></div>
-        </div>
-        <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-            <p>© 2025 سافر. جميع الحقوق محفوظة.</p>
-        </div>
-    </footer>
+    @include('partials.footer')
 
     <script>
         document.querySelectorAll('.favorite-btn').forEach(btn => {

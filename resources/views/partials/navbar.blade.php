@@ -7,15 +7,16 @@
                     class="w-full h-full object-contain">
             </div>
         </div>
-        
+
         <div class="hidden lg:flex items-center gap-8 text-gray-700">
             <a href="{{ route('web.home') }}"
                 class="hover:text-blue-600 transition {{ request()->routeIs('web.home') ? 'text-safer-blue font-bold' : '' }}">الرئيسية</a>
-            <a href="{{ route('web.hotels.index') }}" 
+            <a href="{{ route('web.hotels.index') }}"
                 class="hover:text-blue-600 transition {{ request()->routeIs('web.hotels.*') ? 'text-safer-blue font-bold' : '' }}">الإقامات</a>
             <!-- Services Dropdown -->
             <div class="relative group">
-                <button class="flex items-center gap-1 hover:text-blue-600 transition {{ request()->routeIs('web.services.*') || request()->routeIs('web.private_cars.*') || request()->routeIs('web.buses.*') ? 'text-safer-blue font-bold' : '' }}">
+                <button
+                    class="flex items-center gap-1 hover:text-blue-600 transition {{ request()->routeIs('web.services.*') || request()->routeIs('web.private_cars.*') || request()->routeIs('web.buses.*') ? 'text-safer-blue font-bold' : '' }}">
                     <span>الخدمات</span>
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
@@ -37,8 +38,9 @@
             </div>
             <a href="{{ route('web.events.index') }}"
                 class="hover:text-blue-600 transition {{ request()->routeIs('web.events.*') || request()->routeIs('web.services.trips*') ? 'text-safer-blue font-bold' : '' }}">الأنشطة</a>
-            <a href="{{ route('web.contact') }}" 
-                class="hover:text-blue-600 transition {{ request()->routeIs('web.contact') ? 'text-safer-blue font-bold' : '' }}">تواصل معنا</a>
+            <a href="{{ route('web.contact') }}"
+                class="hover:text-blue-600 transition {{ request()->routeIs('web.contact') ? 'text-safer-blue font-bold' : '' }}">تواصل
+                معنا</a>
         </div>
 
         <div class="flex items-center gap-4">
@@ -74,9 +76,9 @@
                             <span>حجوزاتي</span>
                             <i class="fa-solid fa-calendar-check text-sm"></i>
                         </a>
-                        <form action="{{ route('logout') }}" method="POST" class="m-0">
+                        <form action="{{ route('logout') }}" method="POST" id="logout-form-desktop" class="m-0">
                             @csrf
-                            <button type="submit"
+                            <button type="button" onclick="handleLogout('logout-form-desktop')"
                                 class="w-full flex items-center justify-end gap-3 px-6 py-3 text-red-500 hover:bg-red-50 transition">
                                 <span>تسجيل خروج</span>
                                 <i class="fa-solid fa-right-from-bracket text-sm"></i>
@@ -101,67 +103,77 @@
     <!-- Mobile Menu -->
     <div class="lg:hidden hidden mt-4 pb-4" id="mobile-menu">
         <div class="space-y-2">
-            <a href="{{ route('web.home') }}" 
+            <a href="{{ route('web.home') }}"
                 class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg {{ request()->routeIs('web.home') ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
                 الرئيسية
             </a>
-            <a href="{{ route('web.hotels.index') }}" 
+            <a href="{{ route('web.hotels.index') }}"
                 class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg {{ request()->routeIs('web.hotels.*') ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
                 الإقامات
             </a>
-            
+
             <!-- Mobile Services Submenu -->
             <div>
-                <button class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onclick="toggleMobileSubmenu()">
+                <button
+                    class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                    onclick="toggleMobileSubmenu()">
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                     <span>الخدمات</span>
                 </button>
                 <div class="hidden mr-4 mt-1 space-y-1" id="mobile-submenu">
-                    <a href="{{ route('web.hotels.index') }}" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                    <a href="{{ route('web.hotels.index') }}"
+                        class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         حجز فنادق
                     </a>
-                    <a href="{{ route('web.private_cars.index') }}" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                    <a href="{{ route('web.private_cars.index') }}"
+                        class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         حجز سيارات خاصة
                     </a>
-                    <a href="{{ route('web.buses.search') }}" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                    <a href="{{ route('web.buses.search') }}"
+                        class="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         حجز حافلة
                     </a>
                 </div>
             </div>
 
-            <a href="{{ route('web.events.index') }}" 
+            <a href="{{ route('web.events.index') }}"
                 class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg {{ request()->routeIs('web.events.*') ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
                 الأنشطة
             </a>
-            <a href="{{ route('web.contact') }}" 
+            <a href="{{ route('web.contact') }}"
                 class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg {{ request()->routeIs('web.contact') ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
                 تواصل معنا
             </a>
 
             @auth
                 <div class="border-t border-gray-200 pt-2 mt-2">
-                    <a href="{{ route('web.profile.edit') }}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
+                    <a href="{{ route('web.profile.edit') }}"
+                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
                         <i class="fa-solid fa-user-pen ml-2"></i>
                         الملف الشخصي
                     </a>
-                    <a href="{{ route('web.favorites.index') }}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
+                    <a href="{{ route('web.favorites.index') }}"
+                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
                         <i class="fa-solid fa-heart ml-2"></i>
                         المفضلة
                     </a>
-                    <a href="{{ route('web.bookings.index') }}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
+                    <a href="{{ route('web.bookings.index') }}"
+                        class="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg">
                         <i class="fa-solid fa-calendar-check ml-2"></i>
                         حجوزاتي
                     </a>
-                    <form action="{{ route('logout') }}" method="POST">
+                    <form action="{{ route('logout') }}" method="POST" id="logout-form-mobile">
                         @csrf
-                        <button type="submit" class="w-full text-right px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg">
+                        <button type="button" onclick="handleLogout('logout-form-mobile')"
+                            class="w-full text-right px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg">
                             <i class="fa-solid fa-right-from-bracket ml-2"></i>
                             تسجيل خروج
                         </button>
                     </form>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="block px-4 py-3 bg-safer-blue text-white text-center rounded-lg font-bold">
+                <a href="{{ route('login') }}"
+                    class="block px-4 py-3 bg-safer-blue text-white text-center rounded-lg font-bold">
                     تسجيل دخول
                 </a>
             @endauth
@@ -173,6 +185,7 @@
     .text-safer-blue {
         color: #2C67FF;
     }
+
     .bg-safer-blue {
         background-color: #2C67FF;
     }
@@ -180,12 +193,17 @@
 
 <script>
     // Mobile menu toggle
-    document.getElementById('mobile-menu-button')?.addEventListener('click', function() {
+    document.getElementById('mobile-menu-button')?.addEventListener('click', function () {
         document.getElementById('mobile-menu')?.classList.toggle('hidden');
     });
 
     // Mobile submenu toggle
     function toggleMobileSubmenu() {
         document.getElementById('mobile-submenu')?.classList.toggle('hidden');
+    }
+
+    function handleLogout(formId) {
+        localStorage.removeItem('auth_token');
+        document.getElementById(formId).submit();
     }
 </script>

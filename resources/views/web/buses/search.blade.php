@@ -42,11 +42,10 @@
                         <div>
                             <label class="block text-gray-700 font-bold mb-2 text-right">محطة البداية</label>
                             <div class="relative">
-                                <i class="fa-solid fa-location-dot absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" 
-                                    name="departure_location" 
-                                    placeholder="ابحث عن محطة البداية"
-                                    required
+                                <i
+                                    class="fa-solid fa-location-dot absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" name="departure_location" placeholder="ابحث عن محطة البداية"
+                                    value="{{ $departure_location ?? '' }}" required
                                     class="w-full border border-gray-300 rounded-xl px-12 py-4 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
                         </div>
@@ -54,11 +53,10 @@
                         <div>
                             <label class="block text-gray-700 font-bold mb-2 text-right">محطة النهاية</label>
                             <div class="relative">
-                                <i class="fa-solid fa-location-dot absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" 
-                                    name="arrival_location" 
-                                    placeholder="ابحث عن محطة النهاية"
-                                    required
+                                <i
+                                    class="fa-solid fa-location-dot absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" name="arrival_location" placeholder="ابحث عن محطة النهاية"
+                                    value="{{ $arrival_location ?? '' }}" required
                                     class="w-full border border-gray-300 rounded-xl px-12 py-4 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
                         </div>
@@ -68,11 +66,10 @@
                         <div>
                             <label class="block text-gray-700 font-bold mb-2 text-right">تاريخ الرحلة</label>
                             <div class="relative">
-                                <i class="fa-solid fa-calendar absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="date" 
-                                    name="trip_date" 
-                                    min="{{ date('Y-m-d') }}"
-                                    required
+                                <i
+                                    class="fa-solid fa-calendar absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="date" name="trip_date" value="{{ $trip_date ?? '' }}"
+                                    min="{{ date('Y-m-d') }}" required
                                     class="w-full border border-gray-300 rounded-xl px-12 py-4 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
                         </div>
@@ -80,20 +77,17 @@
                         <div>
                             <label class="block text-gray-700 font-bold mb-2 text-right">عدد الركاب</label>
                             <div class="relative">
-                                <i class="fa-solid fa-users absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="number" 
-                                    name="number_of_passengers" 
-                                    min="1" 
-                                    max="50"
-                                    value="1"
-                                    required
+                                <i
+                                    class="fa-solid fa-users absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="number" name="number_of_passengers" min="1" max="50"
+                                    value="{{ $number_of_passengers ?? 1 }}" required
                                     class="w-full border border-gray-300 rounded-xl px-12 py-4 text-right focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
                         </div>
                     </div>
 
                     <div class="pt-4">
-                        <button type="submit" 
+                        <button type="submit"
                             class="w-full bg-safer-blue text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition text-lg font-bold shadow-lg hover:shadow-xl">
                             <i class="fa-solid fa-magnifying-glass ml-2"></i>
                             بحث عن حافلات

@@ -15,34 +15,30 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = \App\Models\Trip::where('is_active', true);
+        $tripsQuery = \App\Models\Trip::where('is_active', true);
+        $eventsQuery = \App\Models\Event::where('is_active', true);
 
-        // Filter by upcoming or past
-        if ($request->filled('filter')) {
-            if ($request->filter === 'upcoming') {
-                $query->where('trip_date', '>=', now());
-            } elseif ($request->filter === 'past') {
-                $query->where('trip_date', '<', now());
-            }
-        } else {
-            // Default: show upcoming trips
-            $query->where('trip_date', '>=', now());
-        }
-
-        // Search by location
+        // Search by location for trips
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
+            $tripsQuery->where(function ($q) use ($search) {
                 $q->where('departure_location_ar', 'like', "%{$search}%")
                     ->orWhere('departure_location_en', 'like', "%{$search}%")
                     ->orWhere('arrival_location_ar', 'like', "%{$search}%")
                     ->orWhere('arrival_location_en', 'like', "%{$search}%");
             });
+            $eventsQuery->where(function ($q) use ($search) {
+                $q->where('name_ar', 'like', "%{$search}%")
+                    ->orWhere('name_en', 'like', "%{$search}%")
+                    ->orWhere('location_ar', 'like', "%{$search}%")
+                    ->orWhere('location_en', 'like', "%{$search}%");
+            });
         }
 
-        $events = $query->orderBy('trip_date', 'asc')->paginate(12);
+        $trips = $tripsQuery->orderBy('trip_date', 'asc')->get();
+        $discoveryEvents = $eventsQuery->orderBy('event_date', 'asc')->get();
 
-        return view('web.events.index', compact('events'));
+        return view('web.events.index', compact('trips', 'discoveryEvents'));
     }
 
     /**
@@ -81,28 +77,27 @@ class EventController extends Controller
         }
 
         // Calculate total price
-        $totalPrice = $event->ticket_price * $validated['number_of_tickets'];
+        $totalPrice = $event->price_per_person * $validated['number_of_tickets'];
 
         DB::beginTransaction();
         try {
-            // Create tickets
-            for ($i = 0; $i < $validated['number_of_tickets']; $i++) {
-                EventTicket::create([
-                    'event_id' => $event->id,
-                    'user_id' => auth()->id(),
-                    'ticket_number' => 'TKT-' . strtoupper(uniqid()),
-                    'price' => $event->ticket_price,
-                    'status' => 'active',
-                ]);
-            }
+            // Create ticket record
+            EventTicket::create([
+                'event_id' => $event->id,
+                'user_id' => auth()->id(),
+                'tickets_count' => $validated['number_of_tickets'],
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+                'notes' => $request->input('notes'),
+            ]);
 
             // Update available tickets
             $event->decrement('available_tickets', $validated['number_of_tickets']);
 
             DB::commit();
 
-            return redirect()->route('web.events.my-tickets')
-                ->with('success', 'تم شراء التذاكر بنجاح');
+            return redirect()->route('web.bookings.index', ['tab' => 'hotels'])
+                ->with('success', 'تم طلب التذاكر بنجاح، بانتظار التأكيد');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'حدث خطأ أثناء شراء التذاكر']);

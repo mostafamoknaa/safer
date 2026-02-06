@@ -45,7 +45,6 @@ class Hotel extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'services' => 'array',
         'rate' => 'decimal:1',
         'lat' => 'float',
         'lang' => 'float',

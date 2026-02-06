@@ -11,7 +11,8 @@ class ContactController extends Controller
 {
     public function index()
     {
-        return view('web.contact.index');
+        $contactLinks = \App\Models\ContactLink::where('is_active', true)->get();
+        return view('web.contact.index', compact('contactLinks'));
     }
 
     public function store(Request $request)

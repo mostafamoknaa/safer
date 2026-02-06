@@ -22,19 +22,70 @@
         }
 
         .seat {
-            @apply w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer transition-all duration-200 relative;
+            width: 3.25rem;
+            height: 3.75rem;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border: 2px solid transparent;
         }
 
         .seat.available {
-            @apply bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600 border-2 border-gray-200;
+            background-color: #f8fafc;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+        }
+
+        .seat.available:hover {
+            background-color: #f0f7ff;
+            color: #2C67FF;
+            border-color: #2C67FF;
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(44, 103, 255, 0.1);
         }
 
         .seat.booked {
-            @apply bg-gray-800 text-white cursor-not-allowed border-2 border-gray-800 opacity-50;
+            background-color: #1e293b;
+            color: #64748b;
+            cursor: not-allowed;
+            opacity: 0.4;
+            border-color: #1e293b;
         }
 
         .seat.selected {
-            @apply bg-safer-blue text-white border-2 border-safer-blue shadow-md;
+            background-color: #2C67FF;
+            color: #ffffff;
+            border-color: #2C67FF;
+            box-shadow: 0 10px 20px -5px rgba(44, 103, 255, 0.4);
+            animation: seat-select 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes seat-select {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .seat.limit-reached:not(.selected) {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+            transform: scale(0.95);
+        }
+
+        .seat i {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+        }
+
+        .seat span {
+            font-size: 0.65rem;
+            font-weight: 800;
         }
 
         /* Modal Transitions */
@@ -112,17 +163,23 @@
                                     <h3 class="text-xl font-bold text-gray-900">خريطة الحافلة</h3>
                                     <p class="text-gray-500 text-sm mt-1">اختر المقاعد المفضلة لديك</p>
                                 </div>
-                                <div class="flex gap-4 bg-gray-50 p-2 rounded-xl">
-                                    <div class="flex items-center gap-2 px-3">
-                                        <div class="w-3 h-3 bg-gray-800 rounded"></div>
+                                <div class="flex gap-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                                    <div class="flex items-center gap-2.5 px-3">
+                                        <div class="w-8 h-8 bg-gray-800/40 rounded-lg flex items-center justify-center text-gray-500">
+                                            <i class="fa-solid fa-chair text-sm"></i>
+                                        </div>
                                         <span class="text-xs font-bold text-gray-600">محجوز</span>
                                     </div>
-                                    <div class="flex items-center gap-2 px-3 border-r border-gray-200">
-                                        <div class="w-3 h-3 bg-safer-blue rounded"></div>
+                                    <div class="flex items-center gap-2.5 px-3 border-r border-gray-200">
+                                        <div class="w-8 h-8 bg-safer-blue rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-200">
+                                            <i class="fa-solid fa-chair text-sm"></i>
+                                        </div>
                                         <span class="text-xs font-bold text-gray-600">مختار</span>
                                     </div>
-                                    <div class="flex items-center gap-2 px-3 border-r border-gray-200">
-                                        <div class="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
+                                    <div class="flex items-center gap-2.5 px-3 border-r border-gray-200">
+                                        <div class="w-8 h-8 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                                            <i class="fa-solid fa-chair text-sm"></i>
+                                        </div>
                                         <span class="text-xs font-bold text-gray-600">متاح</span>
                                     </div>
                                 </div>
@@ -152,7 +209,8 @@
                                                     <div class="seat {{ $isBooked ? 'booked' : 'available' }}"
                                                         data-seat="{{ $i }}"
                                                         onclick="toggleSeat(this, {{ $isBooked ? 'true' : 'false' }})">
-                                                        {{ $i }}
+                                                        <i class="fa-solid fa-chair"></i>
+                                                        <span>{{ $i }}</span>
                                                     </div>
                                                 @endfor
                                             </div>
@@ -179,13 +237,14 @@
                                                         <div class="seat {{ $isBooked ? 'booked' : 'available' }}"
                                                             data-seat="{{ $seatId }}"
                                                             onclick="toggleSeat(this, {{ $isBooked ? 'true' : 'false' }})">
-                                                            {{ $seatId }}
+                                                            <i class="fa-solid fa-chair"></i>
+                                                            <span>{{ $seatId }}</span>
                                                         </div>
                                                     @endfor
-
+ 
                                                     {{-- Aisle --}}
                                                     <div class="w-8 flex items-center justify-center text-xs text-gray-300 font-bold">{{ $rowLabel }}</div>
-
+ 
                                                     {{-- Right Seats (3, 4) --}}
                                                     @for($c = 3; $c <= 4; $c++)
                                                         @php 
@@ -195,7 +254,8 @@
                                                         <div class="seat {{ $isBooked ? 'booked' : 'available' }}"
                                                             data-seat="{{ $seatId }}"
                                                             onclick="toggleSeat(this, {{ $isBooked ? 'true' : 'false' }})">
-                                                            {{ $seatId }}
+                                                            <i class="fa-solid fa-chair"></i>
+                                                            <span>{{ $seatId }}</span>
                                                         </div>
                                                     @endfor
                                                 @endfor
@@ -204,16 +264,15 @@
                                                 <div class="col-span-5 pt-8 grid grid-cols-5 gap-2">
                                                     @for($k = 1; $k <= 5; $k++)
                                                         @php 
-                                                            $lastRowLabel = end($rows); // Can be improved logic
-                                                            $seatId = 'Z' . $k; // Using Z for back row for simplicity or custom logic
-                                                            // Or continue numbering. Let's stick to a simple 5-seat back row
+                                                            $lastRowLabel = end($rows);
+                                                            $seatId = 'Z' . $k;
                                                             $isBooked = in_array($seatId, $bookedSeats);
                                                         @endphp
-                                                        <!-- Placeholder for back seats logic, using consistent naming if needed -->
                                                         <div class="seat {{ $isBooked ? 'booked' : 'available' }}"
                                                             data-seat="{{ 'LR'.$k }}"
                                                             onclick="toggleSeat(this, {{ $isBooked ? 'true' : 'false' }})">
-                                                            {{ 'LR'.$k }}
+                                                            <i class="fa-solid fa-chair"></i>
+                                                            <span>{{ 'LR'.$k }}</span>
                                                         </div>
                                                     @endfor
                                                 </div>
@@ -330,7 +389,7 @@
         const modal = document.getElementById('paymentModal');
 
         function toggleSeat(element, isBooked) {
-            if (isBooked) return;
+            if (isBooked || element.classList.contains('limit-reached') && !element.classList.contains('selected')) return;
 
             const seatNumber = element.getAttribute('data-seat');
 
@@ -339,11 +398,8 @@
                 element.classList.add('available');
                 selectedSeats = selectedSeats.filter(s => s !== seatNumber);
             } else {
-                if (selectedSeats.length >= maxSeats) {
-                    // Shake animation or toast could define better UX
-                    alert('لقد اخترت العدد المطلوب من المقاعد');
-                    return;
-                }
+                if (selectedSeats.length >= maxSeats) return;
+                
                 element.classList.remove('available');
                 element.classList.add('selected');
                 selectedSeats.push(seatNumber);
@@ -356,10 +412,18 @@
             // Update Counts
             document.getElementById('selectedCountDisplay').textContent = selectedSeats.length;
             
+            // Handle Limit Reached State
+            const allAvailableSeats = document.querySelectorAll('.seat.available');
+            if (selectedSeats.length >= maxSeats) {
+                allAvailableSeats.forEach(s => s.classList.add('limit-reached'));
+            } else {
+                allAvailableSeats.forEach(s => s.classList.remove('limit-reached'));
+            }
+            
             // Update List
             const listEl = document.getElementById('selectedList');
             if (selectedSeats.length > 0) {
-                listEl.textContent = selectedSeats.join(' , ');
+                listEl.innerHTML = selectedSeats.map(s => `<span class="inline-block bg-blue-50 text-safer-blue px-3 py-1 rounded-lg border border-blue-100 mr-2 mb-2 font-extrabold text-sm">${s}</span>`).join('');
                 listEl.classList.remove('text-gray-400');
                 listEl.classList.add('text-gray-900');
             } else {
