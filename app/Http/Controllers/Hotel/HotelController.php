@@ -67,6 +67,7 @@ class HotelController extends Controller
     public function edit(Hotel $hotel): View
     {
         if ($hotel->user_id !== auth()->id()) {
+        
             abort(403, 'ليس لديك صلاحية لتعديل هذا الفندق.');
         }
 
@@ -82,6 +83,7 @@ class HotelController extends Controller
      */
     public function update(Request $request, Hotel $hotel): RedirectResponse
     {
+        if ($hotel->user_id !== auth()->id()) {
         if ($hotel->user_id !== auth()->id()) {
             abort(403, 'ليس لديك صلاحية لتعديل هذا الفندق.');
         }
@@ -117,6 +119,7 @@ class HotelController extends Controller
             'about_info_ar' => ['nullable', 'string'],
             'about_info_en' => ['nullable', 'string'],
             'services' => ['nullable', 'array'],
+            'services.*' => ['exists:services,id'],
             'services.*' => ['exists:services,id'],
             'is_active' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array'],

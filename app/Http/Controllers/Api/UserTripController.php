@@ -18,6 +18,7 @@ class UserTripController extends Controller
     {
         $trips = Trip::where('user_id', Auth::id())
             ->with(['bus', 'serviceRequests.user'])
+            ->with(['bus', 'serviceRequests.user'])
             ->orderBy('trip_date', 'desc')
             ->get()
             ->map(function($trip) {
