@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Trip;
+use App\Models\Bus;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class UserTripController extends Controller
+{
+    /**
+     * Get user's trips.
+     */
+    public function index(): JsonResponse
+    {
+        $trips = Trip::where('user_id', Auth::id())
+            ->with(['bus', 'serviceRequests.user'])
+            ->orderBy('trip_date', 'desc')
+            ->get()
+            ->map(function($trip) {
+                return [
+                    'id' => $trip->id,
+                    'departure_location_ar' => $trip->departure_location_ar,
+                    'departure_location_en' => $trip->departure_location_en,
+                    'arrival_location_ar' => $trip->arrival_location_ar,
+                    'arrival_location_en' => $trip->arrival_location_en,
+                    'bus' => $trip->bus,
+                    'price' => (float) $trip->price,
+                    'trip_date' => $trip->trip_date,
+                    'trip_time' => $trip->trip_time,
+                    'duration_minutes' => $trip->duration_minutes,
+                    'is_active' => $trip->is_active,
+                    'cancellation_policy' => $trip->cancellation_policy,
+                    'bookings' => $trip->serviceRequests->map(fn($req) => [
+                        'id' => $req->id,
+                        'user' => $req->user,
+                        'passengers_count' => $req->passengers_count,
+                        'total_price' => (float) $req->total_price,
+                        'status' => $req->status,
+                        'created_at' => $req->created_at,
+                    ]),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $trips,
+        ]);
+    }
+
+    /**
+     * Store a new trip.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'departure_location_ar' => 'required|string|max:255',
+            'departure_location_en' => 'required|string|max:255',
+            'arrival_location_ar' => 'required|string|max:255',
+            'arrival_location_en' => 'required|string|max:255',
+            'bus_id' => 'required|exists:buses,id',
+            'price' => 'required|numeric|min:0',
+            'trip_date' => 'required|date',
+            'trip_time' => 'required',
+            'duration_minutes' => 'required|integer|min:1',
+            'cancellation_policy' => 'nullable|array',
+        ]);
+
+        // Verify bus ownership
+        $bus = Bus::findOrFail($validated['bus_id']);
+        if ($bus->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Invalid bus selection. You do not own this bus.'
+            ], 403);
+        }
+
+        $validated['user_id'] = Auth::id();
+        $validated['is_active'] = true;
+
+        $trip = Trip::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Trip added successfully',
+            'data' => $trip,
+        ], 201);
+    }
+
+    /**
+     * Update a trip.
+     */
+    public function update(Request $request, Trip $trip): JsonResponse
+    {
+        if ($trip->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'departure_location_ar' => 'string|max:255',
+            'departure_location_en' => 'string|max:255',
+            'arrival_location_ar' => 'string|max:255',
+            'arrival_location_en' => 'string|max:255',
+            'bus_id' => 'exists:buses,id',
+            'price' => 'numeric|min:0',
+            'trip_date' => 'date',
+            'trip_time' => 'string',
+            'duration_minutes' => 'integer|min:1',
+            'is_active' => 'boolean',
+            'cancellation_policy' => 'nullable|array',
+        ]);
+
+        if (isset($validated['bus_id'])) {
+            $bus = Bus::findOrFail($validated['bus_id']);
+            if ($bus->user_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Invalid bus selection. You do not own this bus.'
+                ], 403);
+            }
+        }
+
+        $trip->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Trip updated successfully',
+            'data' => $trip,
+        ]);
+    }
+
+    /**
+     * Delete a trip.
+     */
+    public function destroy(Trip $trip): JsonResponse
+    {
+        if ($trip->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $trip->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Trip deleted successfully',
+        ]);
+    }
+
+    /**
+     * Clone a trip.
+     */
+    public function clone(Trip $trip): JsonResponse
+    {
+        if ($trip->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $newTrip = $trip->replicate();
+        $newTrip->push();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Trip cloned successfully',
+            'data' => $newTrip,
+        ], 201);
+    }
+}
