@@ -413,7 +413,6 @@ class ServiceController extends Controller
     public function getUserRequests(Request $request): JsonResponse
     {
         $query = ServiceRequest::where('user_id', Auth::id())
-            ->with(['trip.bus', 'bus', 'privateCar', 'user']);
             ->with(['trip.bus', 'trip.user', 'bus.user', 'privateCar.user', 'user']);
 
         if ($request->filled('type')) {
@@ -422,7 +421,6 @@ class ServiceController extends Controller
 
         $requests = $query->orderByDesc('created_at')
             ->get()
-            ->map(function ($req) {
             ->map(function ($req) {
                 $data = [
                     'id' => $req->id,
@@ -448,11 +446,6 @@ class ServiceController extends Controller
                         'departure_location' => app()->getLocale() === 'ar' ? $req->trip->departure_location_ar : $req->trip->departure_location_en,
                         'arrival_location' => app()->getLocale() === 'ar' ? $req->trip->arrival_location_ar : $req->trip->arrival_location_en,
                         'trip_date' => $req->trip->trip_date->format('Y-m-d'),
-                if ($req->service_type === 'bus') {
-                    $data['trip'] = $req->trip ? [
-                        'departure_location' => app()->getLocale() === 'ar' ? $req->trip->departure_location_ar : $req->trip->departure_location_en,
-                        'arrival_location' => app()->getLocale() === 'ar' ? $req->trip->arrival_location_ar : $req->trip->arrival_location_en,
-                        'trip_date' => $req->trip->trip_date->format('Y-m-d'),
                     ] : null;
                     $data['passengers_count'] = $req->passengers_count;
                     
@@ -466,8 +459,6 @@ class ServiceController extends Controller
                     ] : null;
                     $data['passengers_count'] = $req->passengers_count;
                 } else {
-                    $data['car'] = $req->privateCar ? [
-                        'name' => app()->getLocale() === 'ar' ? $req->privateCar->name_ar : $req->privateCar->name_en,
                     $data['car'] = $req->privateCar ? [
                         'name' => app()->getLocale() === 'ar' ? $req->privateCar->name_ar : $req->privateCar->name_en,
                     ] : null;
