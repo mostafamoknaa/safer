@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
@@ -24,28 +26,27 @@ class RegisterController extends Controller
                 'password' => ['required', 'string', 'min:8'],
             ]);
 
+            // Generate OTP
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
                 'is_admin' => false,
+                'otp_code' => $otp,
+                'otp_expires_at' => now()->addMinutes(10),
             ]);
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            // Send OTP via email
+            Mail::to($user->email)->send(new OtpMail($otp));
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم إنشاء الحساب بنجاح',
+                'message' => 'تم إنشاء الحساب بنجاح. يرجى التحقق من بريدك الإلكتروني لإدخال رمز التحقق',
                 'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'phone' => $user->phone,
-                    ],
-                    'token' => $token,
-                    'token_type' => 'Bearer',
+                    'email' => $user->email,
                 ],
             ], 201);
         } catch (ValidationException $e) {

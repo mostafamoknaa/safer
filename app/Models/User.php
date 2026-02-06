@@ -29,6 +29,8 @@ class User extends Authenticatable
         'fcm_token',
         'type',
         'card_number',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     /**
@@ -39,6 +41,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
 
     /**
@@ -54,6 +57,7 @@ class User extends Authenticatable
             'is_admin' => 'boolean',
             'is_active' => 'boolean',
             'type' => 'string', // or simplify to string for now since it's enum in DB
+            'otp_expires_at' => 'datetime',
         ];
     }
 

@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\Auth\ForgotPasswordController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\Auth\UpdatePasswordController;
+use App\Http\Controllers\Api\Auth\VerificationController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
@@ -10,12 +13,17 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
+Route::post('/verify-email', [VerificationController::class, 'verify']);
+Route::post('/resend-otp', [VerificationController::class, 'resend']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendOtp']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout']);
     Route::get('/me', [LoginController::class, 'me']);
     Route::post('/update-profile' , [LoginController::class, 'updateProfile']);
+    Route::post('/update-password', [UpdatePasswordController::class, 'update']);
 
     Route::get('/user', function (Request $request) {
         return response()->json([

@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\Booking;
 use App\Models\Hotel;
 use App\Models\HotelMedia;
-use App\Models\HotelRoom;
 use App\Models\HotelRoom;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -451,35 +449,6 @@ class UserHotelController extends Controller
         ]);
     }
 
-    /**
-     * Delete hotel.
-     */
-    public function destroy(Hotel $hotel): JsonResponse
-    {
-        if ($hotel->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بحذف هذا الفندق',
-            ], 403);
-        }
-
-        foreach ($hotel->media as $media) {
-            Storage::disk('public')->delete($media->file_path);
-        }
-
-        foreach ($hotel->rooms as $room) {
-            foreach ($room->media as $media) {
-                Storage::disk('public')->delete($media->file_path);
-            }
-        }
-
-        $hotel->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم حذف الفندق بنجاح',
-        ]);
-    }
 
     /**
      * Clone a hotel.
