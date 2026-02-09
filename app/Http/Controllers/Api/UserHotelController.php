@@ -20,7 +20,7 @@ class UserHotelController extends Controller
     public function getUserHotels(): JsonResponse
     {
         $hotels = Hotel::where('user_id', Auth::id())
-            ->with(['media', 'province', 'icalUrls'])
+            ->with(['media', 'province' , 'icalUrls'])
             ->get()
             ->map(function ($hotel) {
                 return [
@@ -45,8 +45,7 @@ class UserHotelController extends Controller
                     'is_active' => $hotel->is_active,
                     'schedule_type' => $hotel->schedule_type,
                     'daily_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
-                    'daily_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
-                    'booking_settings' => $hotel->booking_settings,
+                    //'booking_settings' => $hotel->booking_settings,
                     'week_schedule' => $hotel->week_schedule,
                     'blocked_dates' => $hotel->blocked_dates,
                     'identity_images' => $hotel->identity_images,
@@ -79,7 +78,7 @@ class UserHotelController extends Controller
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
             'description_ar' => 'nullable|string|max:2000',
-            'description_en' => 'nullable|string',
+            'description_en' => 'nullable|string|max:2000',
             'cancellation_policy' => 'nullable|array',
             'images' => 'nullable|array|max:10',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
@@ -136,9 +135,10 @@ class UserHotelController extends Controller
         $validated['is_active'] = false; // Pending approval
 
         $hotel = Hotel::create($validated);
-
-        // Notify
+      
+       // Notify
         app(\App\Services\FirebaseNotificationService::class)->notifySubmission($hotel->user, $hotel->name_ar ?: $hotel->name_en, 'hotel');
+
 
         // Handle hotel images only
         if ($request->hasFile('images')) {
@@ -152,7 +152,8 @@ class UserHotelController extends Controller
                 ]);
             }
         }
-
+      
+      
         // Handle iCal URLs
         if ($request->has('icals')) {
             foreach ($request->icals as $ical) {
@@ -163,7 +164,12 @@ class UserHotelController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم إرسال طلب إضافة الفندق بنجاح وسيتم مراجعته',
-            'data' => ['hotel_id' => $hotel->id],
+            'data' => [
+                'id' => $hotel->id,
+                'type' => $hotel->type,
+                'name_ar' => $hotel->name_ar,
+                'name_en' => $hotel->name_en,
+            ],
         ], 201);
     }
 
@@ -189,7 +195,7 @@ class UserHotelController extends Controller
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
             'description_ar' => 'required|string|max:2000',
-            'description_en' => 'required|string',
+            'description_en' => 'required|string|max:2000',
             'cancellation_policy' => 'nullable|array',
             'schedule_type' => 'required|in:hourly,daily',
             'hourly_price' => 'nullable|numeric|min:0',
@@ -210,8 +216,6 @@ class UserHotelController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'services' => 'nullable|array',
             'services.*' => 'exists:services,id',
-            'lat' => 'nullable|numeric',
-            'lang' => 'nullable|numeric',
             'lat' => 'nullable|numeric',
             'lang' => 'nullable|numeric',
             'country' => 'nullable|string|max:255',
@@ -236,6 +240,7 @@ class UserHotelController extends Controller
 
         $hotel->update($validated);
 
+
         // Add new images
         if ($request->hasFile('images')) {
             $orderColumn = $hotel->media()->max('order_column') ?? -1;
@@ -249,7 +254,7 @@ class UserHotelController extends Controller
                 ]);
             }
         }
-
+      
         // Handle iCal URLs update
         if ($request->has('icals')) {
             foreach ($request->icals as $ical) {
@@ -275,16 +280,8 @@ class UserHotelController extends Controller
      */
     public function show(Hotel $hotel): JsonResponse
     {
-        if ($hotel->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'غير مصرح لك بعرض هذا الفندق',
-            ], 403);
-        }
 
-        $hotel->load(['media', 'rooms.media', 'bookings.user', 'bookings.room']);
-
-        $hotel->load(['media', 'rooms.media', 'bookings.user', 'bookings.room', 'icalUrls']);
+        $hotel->load(['media', 'rooms.media', 'rooms.allBookings', 'rooms.icalUrls', 'bookings.user', 'bookings.rooms', 'icalUrls', 'province']);
 
         return response()->json([
             'success' => true,
@@ -315,20 +312,7 @@ class UserHotelController extends Controller
                 'blocked_dates' => $hotel->blocked_dates,
                 'identity_images' => $hotel->identity_images,
                 'lease_agreement' => $hotel->lease_agreement,
-                'lat' => $hotel->lat,
-                'lang' => $hotel->lang,
-                'country' => $hotel->country,
-                'website_url' => $hotel->website_url,
-                'province' => $hotel->province,
-                'services' => $hotel->services,
-                'schedule_type' => $hotel->schedule_type,
-                'hourly_price' => $hotel->hourly_price ? (float) $hotel->hourly_price : null,
-                'booking_settings' => $hotel->booking_settings,
-                'week_schedule' => $hotel->week_schedule,
-                'blocked_dates' => $hotel->blocked_dates,
-                'identity_images' => $hotel->identity_images,
-                'lease_agreement' => $hotel->lease_agreement,
-                'ical_urls' => $hotel->icalUrls,
+                'ical' => $hotel->icalUrls,
                 'images' => $hotel->media->map(function($media) {
                     return [
                         'id' => $media->id,
@@ -347,53 +331,19 @@ class UserHotelController extends Controller
                         'service_fee' => $room->service_fee,
                         'is_active' => $room->is_active,
                         'services' => $room->services,
-                        'images' => $room->media->map(fn($m) => [
-                            'id' => $m->id,
-                            'url' => asset('storage/' . $m->file_path),
-                        ]),
-                    ];
-                }),
-                'bookings' => $hotel->bookings->map(function($booking) {
-                    return [
-                        'id' => $booking->id,
-                        'user' => [
-                            'id' => $booking->user->id,
-                            'name' => $booking->user->name,
-                            'email' => $booking->user->email,
-                        ],
-                        'room' => $booking->room ? [
-                            'id' => $booking->room->id,
-                            'name' => $booking->room->name,
-                        ] : null,
-                        'check_in' => $booking->check_in,
-                        'check_out' => $booking->check_out,
-                        'total_price' => (float) $booking->total_price,
-                        'status' => $booking->status,
-                        'created_at' => $booking->created_at,
-                    ];
-                }),
-                'created_at' => $hotel->created_at,
-                'updated_at' => $hotel->updated_at,
-                'rooms' => $hotel->rooms->map(function($room) {
-                    return [
-                        'id' => $room->id,
-                        'name' => $room->name,
-                        'price_per_night' => (float) $room->price_per_night,
-                        'beds_count' => $room->beds_count,
-                        'bathrooms_count' => $room->bathrooms_count,
-                        'rooms_count' => $room->rooms_count,
-                        'cleaning_fee' => $room->cleaning_fee,
-                        'service_fee' => $room->service_fee,
-                        'is_active' => $room->is_active,
-                        'services' => $room->services,
                         'ical_urls' => $room->icalUrls,
                         'images' => $room->media->map(fn($m) => [
                             'id' => $m->id,
                             'url' => asset('storage/' . $m->file_path),
                         ]),
+                        'booking_dates' => $room->allBookings
+                            ->where('status', '!=', 'cancelled')
+                            ->map(fn($booking) => [
+                                'check_in' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
+                                'check_out' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
+                            ])->values(),
                     ];
                 }),
-
                 'bookings' => $hotel->bookings->map(function($booking) {
                     return [
                         'id' => $booking->id,
@@ -402,12 +352,14 @@ class UserHotelController extends Controller
                             'name' => $booking->user->name,
                             'email' => $booking->user->email,
                         ],
-                        'room' => $booking->room ? [
-                            'id' => $booking->room->id,
-                            'name' => $booking->room->name,
-                        ] : null,
-                        'check_in' => $booking->check_in,
-                        'check_out' => $booking->check_out,
+                        'rooms' => $booking->rooms->map(function($room) {
+                            return [
+                                'id' => $room->id,
+                                'name' => $room->name,
+                            ];
+                        }),
+                        'check_in' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
+                        'check_out' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
                         'total_price' => (float) $booking->total_price,
                         'status' => $booking->status,
                         'created_at' => $booking->created_at,
@@ -449,7 +401,6 @@ class UserHotelController extends Controller
         ]);
     }
 
-
     /**
      * Clone a hotel.
      */
@@ -465,9 +416,10 @@ class UserHotelController extends Controller
         $newHotel->name_ar .= ' (نسخة)';
         $newHotel->is_active = false; // Reset status
         $newHotel->push();
-
-        // Notify
+      
+      // Notify
         app(\App\Services\FirebaseNotificationService::class)->notifySubmission($newHotel->user, $newHotel->name_ar ?: $newHotel->name_en, 'hotel');
+
 
         // Clone Hotel Media
         foreach ($hotel->media as $media) {

@@ -104,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support/contact', [\App\Http\Controllers\Api\SupportController::class, 'getContactInfo']);
     Route::get('/policies', [\App\Http\Controllers\Api\SupportController::class, 'getPolicies']);
     Route::get('/terms-and-conditions', [\App\Http\Controllers\Api\SupportController::class, 'getTerms']);
+    Route::get('/admin-commission', [\App\Http\Controllers\Api\SupportController::class, 'getAdminCommission']);
     Route::post('/support/contact', [\App\Http\Controllers\Api\SupportController::class, 'sendMessage']);
     Route::get('/support/faq', [\App\Http\Controllers\Api\SupportController::class, 'getFAQ']);
     Route::post('/support/insert-contacts', [\App\Http\Controllers\Api\SupportController::class, 'insertContactLinks']);

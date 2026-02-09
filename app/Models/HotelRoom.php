@@ -51,7 +51,15 @@ class HotelRoom extends Model
     }
 
     /**
-     * Get bookings for this room.
+     * Get all bookings for this room through pivot table.
+     */
+    public function allBookings(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Booking::class, 'booking_rooms', 'room_id', 'booking_id');
+    }
+
+    /**
+     * Get bookings for this room where it's the primary room.
      */
     public function bookings(): HasMany
     {

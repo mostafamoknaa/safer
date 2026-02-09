@@ -290,7 +290,7 @@ class HotelController extends Controller
         }
 
         $hotel->load(['province', 'media', 'managers', 'user', 'reviews.user', 'rooms' => function ($query) {
-            $query->where('is_active', true)->with('media');
+            $query->where('is_active', true)->with(['media', 'allBookings']);
         }]);
 
         $user = auth('sanctum')->user();
@@ -299,15 +299,6 @@ class HotelController extends Controller
             $isFavorite = Favorite::where('user_id', $user->id)
                 ->where('favoritable_id', $hotel->id)
                 ->exists(); 
-
-            // Optimization: reuse the list logic which was:
-            // $favoriteIds = Favorite::where('user_id', $user->id)->pluck('favoritable_id')->toArray();
-        }
-        // Let's stick to the direct query for single item efficiency
-        if ($user) {
-            $isFavorite = Favorite::where('user_id', $user->id)
-                ->where('favoritable_id', $hotel->id)
-                ->exists();
         }
 
         $minPrice = $hotel->rooms->min('price_per_night');
@@ -340,6 +331,12 @@ class HotelController extends Controller
                 'rating' => 4.5, // Placeholder - implement room-specific ratings if needed
                 'images' => $images,
                 'cancellation_policy' => $room->cancellation_policy,
+                'booking_dates' => $room->allBookings
+                    ->whereIn('status', ['confirmed', 'checked_in'])
+                    ->map(fn($booking) => [
+                        'check_in' => $booking->check_in_date ? $booking->check_in_date->format('Y-m-d') : null,
+                        'check_out' => $booking->check_out_date ? $booking->check_out_date->format('Y-m-d') : null,
+                    ])->values(),
             ];
         });
 

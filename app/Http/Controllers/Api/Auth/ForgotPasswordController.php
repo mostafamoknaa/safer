@@ -102,12 +102,26 @@ class ForgotPasswordController extends Controller
             $user->otp_expires_at = null;
             $user->save();
 
-            // Revoke all tokens to force re-login
+            // Revoke all old tokens
             $user->tokens()->delete();
+
+            // Create new token
+            $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'success' => true,
                 'message' => 'تم إعادة تعيين كلمة المرور بنجاح',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'image' => $user->image,
+                    ],
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ],
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([

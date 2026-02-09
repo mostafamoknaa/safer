@@ -79,6 +79,14 @@ class Booking extends Model
     }
 
     /**
+     * Get booked rooms for this booking via pivot table.
+     */
+    public function rooms(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(HotelRoom::class, 'booking_rooms', 'booking_id', 'room_id')->withTimestamps();
+    }
+
+    /**
      * Get booked rooms for this booking.
      */
     public function bookedRooms(): HasMany

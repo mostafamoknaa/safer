@@ -415,6 +415,7 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'hotel_id' => $hotel->id,
+                'room_id' => $validated['room_ids'][0], // Set first room ID for compatibility
                 'check_in_date' => $validated['check_in_date'],
                 'check_out_date' => $validated['check_out_date'],
                 'guests_count' => $validated['guests_count'],

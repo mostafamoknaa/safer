@@ -29,6 +29,15 @@ class LoginController extends Controller
             }
 
             $user = Auth::user();
+
+            // Check if email is verified
+            if (!$user->email_verified_at) {
+                Auth::logout();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'يرجى التحقق من بريدك الإلكتروني أولاً',
+                ], 403);
+            }
             
             // Delete old tokens (optional - for security)
             $user->tokens()->delete();

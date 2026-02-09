@@ -134,6 +134,24 @@ class SupportController extends Controller
         ]);
     }
 
+    // get admin commission
+    public function getAdminCommission(): JsonResponse
+    {
+        $settings = \App\Models\GlobalSetting::first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'hotel_commission' => $settings ? (float) $settings->hotel_commission : 0,
+                'apartment_commission' => $settings ? (float) $settings->apartment_commission : 0,
+                'car_hour_commission' => $settings ? (float) $settings->car_hour_commission : 0,
+                'car_day_commission' => $settings ? (float) $settings->car_day_commission : 0,
+                'bus_commission' => $settings ? (float) $settings->bus_commission : 0,
+                'activity_commission' => $settings ? (float) $settings->activity_commission : 0,
+            ],
+        ]);
+    }
+
     public function getTerms(){
         $terms = Policy::where('slug', 'term_condition')->get();
 

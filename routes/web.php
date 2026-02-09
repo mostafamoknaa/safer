@@ -453,30 +453,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('services/private-cars/{privateCar}/edit', [
             \App\Http\Controllers\Admin\ServiceController::class,
             'editPrivateCar'
-        ])
-        Route::get('services/private-cars/{privateCar}/edit', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'editPrivateCar'
-        ])
-            ->name('services.private-cars.edit');
-        Route::put('services/private-cars/{privateCar}', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'updatePrivateCar'
-        ])
-        Route::put('services/private-cars/{privateCar}', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'updatePrivateCar'
-        ])
-            ->name('services.private-cars.update');
-        Route::delete('services/private-cars/{privateCar}', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'destroyPrivateCar'
-        ])
-        Route::delete('services/private-cars/{privateCar}', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'destroyPrivateCar'
-        ])
-            ->name('services.private-cars.destroy');
+        ])->name('services.private-cars.edit');
+
 
         Route::get('services/requests', [\App\Http\Controllers\Admin\ServiceController::class, 'requests'])
             ->name('services.requests');
@@ -485,12 +463,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::patch('services/requests/{request}/status', [
             \App\Http\Controllers\Admin\ServiceController::class,
             'updateRequestStatus'
-        ])
-        Route::patch('services/requests/{request}/status', [
-            \App\Http\Controllers\Admin\ServiceController::class,
-            'updateRequestStatus'
-        ])
-            ->name('services.requests.update-status');
+        ])->name('services.requests.update-status');
 
         // Reports
         Route::get('reports/bookings', [\App\Http\Controllers\Admin\ReportController::class, 'bookings'])
@@ -543,23 +516,13 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
         Route::post('conversations/{conversation}/message', [
             \App\Http\Controllers\Hotel\ConversationController::class,
             'sendMessage'
-        ])
-        Route::post('conversations/{conversation}/message', [
-            \App\Http\Controllers\Hotel\ConversationController::class,
-            'sendMessage'
-        ])
-            ->name('conversations.send-message');
+        ])->name('conversations.send-message');
         Route::patch('conversations/{conversation}/close', [\App\Http\Controllers\Hotel\ConversationController::class, 'close'])
             ->name('conversations.close');
         Route::patch('conversations/{conversation}/reopen', [
             \App\Http\Controllers\Hotel\ConversationController::class,
             'reopen'
-        ])
-        Route::patch('conversations/{conversation}/reopen', [
-            \App\Http\Controllers\Hotel\ConversationController::class,
-            'reopen'
-        ])
-            ->name('conversations.reopen');
+        ])->name('conversations.reopen');
 
         Route::post('logout', [\App\Http\Controllers\Hotel\Auth\AuthenticatedSessionController::class, 'destroy'])
             ->name('logout');
@@ -581,18 +544,6 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
         Route::get('reports/cars', [\App\Http\Controllers\Hotel\ReportController::class, 'cars'])
             ->name('reports.cars');
 
-        // Buses, Cars, and Trips management
-        Route::resource('buses', \App\Http\Controllers\Hotel\BusController::class)->except('show');
-        Route::resource('cars', \App\Http\Controllers\Hotel\CarController::class)->except('show');
-        Route::resource('trips', \App\Http\Controllers\Hotel\TripController::class)->except('show');
-    });
-});
-        Route::get('reports/trips', [\App\Http\Controllers\Hotel\ReportController::class, 'trips'])
-            ->name('reports.trips');
-        Route::get('reports/cars', [\App\Http\Controllers\Hotel\ReportController::class, 'cars'])
-            ->name('reports.cars');
-
-        // Buses, Cars, and Trips management
         Route::resource('buses', \App\Http\Controllers\Hotel\BusController::class)->except('show');
         Route::resource('cars', \App\Http\Controllers\Hotel\CarController::class)->except('show');
         Route::resource('trips', \App\Http\Controllers\Hotel\TripController::class)->except('show');
